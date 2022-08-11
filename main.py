@@ -254,8 +254,8 @@ class EncoderSTL:
 
 if __name__ == '__main__':
     encoder = EncoderSTL()
-    encoder.EncodeFileInSTL("original_sphere.STL", "secret.txt", "encoded_sphere.STL")
+    encoder.EncodeFileInSTL("test_files/original_sphere.STL", "test_files/secret.txt", "test_files/encoded/encoded_sphere.STL")
 
     decoder = DecoderSTL()
-    secret = decoder.DecodeMessageFromSTL("encoded_sphere.STL")
-    decoder.SaveDecodedSecretSTL("".join(secret), "decoded_secret.txt")
+    secret = decoder.DecodeMessageFromSTL("test_files/encoded/encoded_sphere.STL")
+    decoder.SaveDecodedSecretSTL("".join(secret), "test_files/decoded/decoded_secret.txt")
