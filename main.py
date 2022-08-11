@@ -1,5 +1,7 @@
 import sys
 from string import Template
+import typing
+import array
 
 
 # 2 types of sanitizers
@@ -20,11 +22,12 @@ class Vertex:
 
 
 class Facet:
-    def __init__(self, vertex_1, vertex_2, vertex_3, normal):
-        self.vertex_1 = vertex_1
-        self.vertex_2 = vertex_2
-        self.vertex_3 = vertex_3
-        self.normal = normal
+    def __init__(self, vertex_1: Vertex, vertex_2: Vertex, vertex_3: Vertex, normal: Vertex):
+        self.vertex_1: Vertex = vertex_1
+        self.vertex_2: Vertex = vertex_2
+        self.vertex_3: Vertex = vertex_3
+        self.normal: Vertex = normal
+        self.affected: bool = False
 
     def string(self):
         string_facet = Template(
@@ -37,7 +40,7 @@ class Facet:
 
 class STLObject:
     facets = []
-    facet_idx = 0
+    facet_idx: int = -1
 
     def __init__(self, filepath):
         file = open(filepath, 'r')
@@ -52,7 +55,7 @@ class STLObject:
                 words_in_line[1] = words_in_line[1].strip()
                 self.obj_name = words_in_line[1]
             if words_in_line[0] == "facet":
-                normal = Vertex(words_in_line[2], words_in_line[3], words_in_line[4])  # x,y,z
+                normal: Vertex = Vertex(words_in_line[2], words_in_line[3], words_in_line[4])  # x,y,z
                 line = file.readline()  # outer loop skip
 
                 line = file.readline()  # vertice 1
@@ -79,14 +82,15 @@ class STLObject:
         file.close()
 
     def GetNextFacet(self):
-        current_facet = self.facets[self.facet_idx]
         self.facet_idx += 1
+        current_facet = self.facets[self.facet_idx]
         return current_facet
 
     def GetCurrentFacet(self):
         return self.facets[self.facet_idx]
 
     def WriteToCurrentFacet(self, facet):
+        facet.affected = True
         self.facets[self.facet_idx] = facet
 
     def FacetsCount(self):
@@ -105,14 +109,29 @@ class STLObject:
 
 
 def Max(v1, v2):
-    if float(v1.x) < float(v2.x):
-        return v2
-    if float(v1.y) < float(v2.y):
-        return v2
-    if float(v1.z) < float(v2.z):
-        return v2
 
-    return v1
+    if float(v1.x) + float(v1.y) + float(v1.z) > float(v2.x) + float(v2.y) + float(v2.z) :
+        return v1
+    else:
+        return v2
+    # if float(v1.x) < float(v2.x):
+    #     return v2
+    # if float(v1.y) < float(v2.y):
+    #     return v2
+    # if float(v1.z) < float(v2.z):
+    #     return v2
+    #
+    # return v1
+
+
+def bitwise_and_bytes(a, b):
+    result_int = int.from_bytes(a, byteorder="big") & int.from_bytes(b, byteorder="big")
+    return result_int
+
+
+def bitwise_or_bytes(a, b):
+    result_int = int.from_bytes(a, byteorder="big") | int.from_bytes(b, byteorder="big")
+    return result_int
 
 
 class DecoderSTL:
@@ -151,7 +170,7 @@ class DecoderSTL:
         return byte_value
 
     def DecodeSize(self):
-        size_in_bytes = bytes()
+        size_in_bytes = bytearray()
         for idx in range(0, 4):
             byte = self.DecodeByte()
             size_in_bytes.append(byte)
@@ -159,18 +178,19 @@ class DecoderSTL:
         size = int.from_bytes(size_in_bytes, "big")
         return size
 
-    def DecodeBytes(self, secret_size):
-        secret = bytes()
-        for _ in secret_size:
+    def DecodeBytes(self, secret_size: int):
+        secret_msg: array = []
+        for _ in range(0, secret_size):
             byte = self.DecodeByte()
-            secret.append(byte)
+            c = chr(byte)
+            secret_msg.append(c)
 
-        return secret
+        return secret_msg
 
 
 class EncoderSTL:
     def __init__(self):
-        self.STL_obj = None
+        self.STL_obj: STLObject = None
 
     def EncodeFileInSTL(self, filename_original_stl, filename_secret, filename_destination_stl):
         file_secret = open(filename_secret, "r")
@@ -206,8 +226,9 @@ class EncoderSTL:
 
         self.STL_obj.WriteToCurrentFacet(facet)
 
-    def EncodeByte(self, byte_value):
+    def EncodeByte(self, byte_value: int):
         bit_mask = 0x80
+
         for i in range(0, 8):
             facet = self.STL_obj.GetNextFacet()
             if byte_value & bit_mask:
@@ -216,29 +237,25 @@ class EncoderSTL:
                 self.EncodeBit(facet, 0)
             bit_mask = bit_mask >> 1
 
-    def EncodeSize(self, secret_size):
-        size_in_bytes = secret_size.to_bytes(4, 'big')
-        for byte in size_in_bytes:
-
+    def EncodeSize(self, secret_size: int):
+        size_in_bytes: bytes = secret_size.to_bytes(4, 'big')
+        for byte in size_in_bytes:  # byte is represented as `int`
             self.EncodeByte(byte)
 
     def EncodeBytes(self, secret_bytes):
         for byte in secret_bytes:
-            b = str.encode(byte)
-            self.EncodeByte(b)
+            byte = ord(byte)
+            self.EncodeByte(byte)
 
     def SaveEncodedSTL(self, fn_destination):
         file = open(fn_destination, "w")
-        file.write(self.STL_obj)
+        file.write(self.STL_obj.string())
         file.close()
 
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     encoder = EncoderSTL()
-    encoder.EncodeFileInSTL("1250_polygon_sphere_100mm.STL", "lol.txt", "encoded_1250.STL")
+    encoder.EncodeFileInSTL("original_sphere.STL", "secret.txt", "encoded_sphere.STL")
 
     decoder = DecoderSTL()
-    secret = decoder.DecodeMessageFromSTL("encoded_1250.STL")
-    print(secret)
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    secret = decoder.DecodeMessageFromSTL("encoded_sphere.STL")
+    decoder.SaveDecodedSecretSTL("".join(secret), "decoded_secret.txt")
