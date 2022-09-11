@@ -99,7 +99,7 @@ class DecoderSTL:
         self.fn_encoded_stl = fn_encoded_stl
 
     def SaveDecodedSecretInFile(self, secret_msg, filename_destination):
-        file = open(filename_destination, "w")
+        file = open(filename_destination, "wb")
         file.write(secret_msg)
         file.close()
 
@@ -109,10 +109,11 @@ class DecoderSTL:
         print('    Save secret as ...: ' + fn_secret_destination)
 
         secret_size = self.DecodeSize()
-        secret_msg: str = self.DecodeBytes(secret_size)
+        secret_msg = self.DecodeBytes(secret_size)
+        secret_msg = bytes(secret_msg)
 
         print('    Decoded ...: ' + str(len(secret_msg)) + ' Bytes')
-        print('    Decoded MD5: ' + hashlib.md5(str.encode(secret_msg)).hexdigest())
+        print('    Decoded MD5: ' + hashlib.md5(secret_msg).hexdigest())
 
         self.SaveDecodedSecretInFile(secret_msg, fn_secret_destination)
         print('    Decoding successful')
@@ -143,14 +144,16 @@ class DecoderSTL:
         size: int = int.from_bytes(size_in_bytes, "big")
         return size
 
-    def DecodeBytes(self, secret_size: int) -> str:
+    def DecodeBytes(self, secret_size: int):
         secret_msg: array = []
         for _ in range(0, secret_size):
             byte = self.DecodeByte()
-            c = chr(byte)
-            secret_msg.append(c)
+            secret_msg.append(byte)
 
-        return "".join(secret_msg)
+        return secret_msg
+
+    def __del__(self):
+        print("Decoder deleted")
 
 
 class EncoderSTL:
@@ -164,14 +167,14 @@ class EncoderSTL:
         print('    Carrier ..: ' + self.fn_original_stl)
         print('    Save As ..: ' + fn_destination_stl)
 
-        secret_bytes: str = open(fn_secret, "r").read()
+        secret_bytes = open(fn_secret, "rb").read()
         secret_size: int = len(secret_bytes)
 
         carrier_capacity = self.carrier_stl.FacetsCount() / 8  # number of bytes
 
         print('    Capacity .: ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
         print('    Secret ...: ' + fn_secret + ' (' + str(secret_size) + ' Bytes)')
-        print('    Secret MD5: ' + hashlib.md5(str.encode(secret_bytes)).hexdigest())
+        print('    Secret MD5: ' + hashlib.md5(secret_bytes).hexdigest())
 
         if carrier_capacity >= secret_size + 4:
             self.EncodeSize(secret_size)
@@ -218,7 +221,6 @@ class EncoderSTL:
 
     def EncodeBytes(self, secret_bytes):
         for byte in secret_bytes:
-            byte = ord(byte)
             self.EncodeByte(byte)
 
     def SaveEncodedSTL(self, fn_destination):
