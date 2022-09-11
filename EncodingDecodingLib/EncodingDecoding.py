@@ -22,6 +22,9 @@ class Facet:
         self.vertex_3: Vertex = vertex_3
         self.normal: Vertex = normal
 
+    def RotateRight(self):
+        self.vertex_1, self.vertex_2, self.vertex_3 = self.vertex_3, self.vertex_1, self.vertex_2
+
     # Returns string representation of a facet
     def string(self) -> str:
         string_facet = Template(
@@ -71,6 +74,7 @@ class STLObject:
     def WriteToCurrentFacet(self, facet):
         if self.facet_idx == -1:
             print("failed to write to current facet, wrong facet index")
+            return
         self.facets[self.facet_idx] = facet
 
     def FacetsCount(self) -> int:
@@ -88,21 +92,21 @@ class STLObject:
 
 
 class DecoderSTL:
-    def __init__(self):
-        self.STL_obj = None
+
+    def __init__(self, fn_encoded_stl: str):
+        carrier_stl = LoadSTL(fn_encoded_stl)
+        self.carrier_stl = carrier_stl
+        self.fn_encoded_stl = fn_encoded_stl
 
     def SaveDecodedSecretInFile(self, secret_msg, filename_destination):
         file = open(filename_destination, "w")
         file.write(secret_msg)
         file.close()
 
-    def DecodeFileFromSTL(self, fn_encoded: str, fn_secret_destination: str):
+    def DecodeFileFromSTL(self, fn_secret_destination: str):
         print('DecodeFileFromSTL')
-        print('    Carrier ...: ' + fn_encoded)
+        print('    Carrier ...: ' + self.fn_encoded_stl)
         print('    Save secret as ...: ' + fn_secret_destination)
-
-        carrier_stl = LoadSTL(fn_encoded)
-        self.STL_obj = carrier_stl
 
         secret_size = self.DecodeSize()
         secret_msg: str = self.DecodeBytes(secret_size)
@@ -122,7 +126,7 @@ class DecoderSTL:
         byte_value: int = 0x00
         bit_mask: int = 0x80
         for i in range(0, 8):
-            facet = self.STL_obj.GetNextFacet()
+            facet = self.carrier_stl.GetNextFacet()
             if self.DecodeBit(facet) == 1:
                 byte_value = byte_value | bit_mask
 
@@ -150,21 +154,20 @@ class DecoderSTL:
 
 
 class EncoderSTL:
-    def __init__(self):
-        self.STL_obj: STLObject = None
+    def __init__(self, fn_original_stl: str):
+        carrier_stl: STLObject = LoadSTL(fn_original_stl)
+        self.carrier_stl: STLObject = carrier_stl
+        self.fn_original_stl = fn_original_stl
 
-    def EncodeFileInSTL(self, fn_original_stl: str, fn_secret: str, fn_destination_stl: str):
+    def EncodeFileInSTL(self, fn_secret: str, fn_destination_stl: str):
         print('EncodeFileInSTL')
-        print('    Carrier ..: ' + fn_original_stl)
+        print('    Carrier ..: ' + self.fn_original_stl)
         print('    Save As ..: ' + fn_destination_stl)
 
         secret_bytes: str = open(fn_secret, "r").read()
         secret_size: int = len(secret_bytes)
 
-        carrier_stl: STLObject = LoadSTL(fn_original_stl)
-        self.STL_obj = carrier_stl
-
-        carrier_capacity = carrier_stl.FacetsCount() / 8  # number of bytes
+        carrier_capacity = self.carrier_stl.FacetsCount() / 8  # number of bytes
 
         print('    Capacity .: ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
         print('    Secret ...: ' + fn_secret + ' (' + str(secret_size) + ' Bytes)')
@@ -195,13 +198,13 @@ class EncoderSTL:
                 # Rotate Left
                 facet.vertex_1, facet.vertex_2, facet.vertex_3 = facet.vertex_2, facet.vertex_3, facet.vertex_1
 
-        self.STL_obj.WriteToCurrentFacet(facet)
+        self.carrier_stl.WriteToCurrentFacet(facet)
 
     def EncodeByte(self, byte_value: int):
         bit_mask: int = 0x80
 
         for i in range(0, 8):
-            facet: Facet = self.STL_obj.GetNextFacet()
+            facet: Facet = self.carrier_stl.GetNextFacet()
             if byte_value & bit_mask:
                 self.EncodeBit(facet, 1)
             else:
@@ -220,7 +223,7 @@ class EncoderSTL:
 
     def SaveEncodedSTL(self, fn_destination):
         file = open(fn_destination, "w")
-        file.write(self.STL_obj.string())
+        file.write(self.carrier_stl.string())
         file.close()
 
 
@@ -271,4 +274,3 @@ def MaxNumbersComparison(v1: Vertex, v2: Vertex) -> Vertex:
 # Default function for (v1,v2) comparison. configuration will be supported in the future
 def Max(v1: Vertex, v2: Vertex) -> Vertex:
     return MaxSumComparison(v1, v2)
-

@@ -1,8 +1,8 @@
 from EncodingDecodingLib.EncodingDecoding import EncoderSTL, DecoderSTL
 
-encoder = EncoderSTL()
-encoder.EncodeFileInSTL("TestFiles/original_sphere.STL", "TestFiles/secret.txt",
-                        "TestFiles/encoded/encoded_sphere.STL")
+encoder = EncoderSTL("TestFiles/EncodingDecodingTest/original_sphere.STL") # carrier's filepath
+encoder.EncodeFileInSTL("TestFiles/EncodingDecodingTest/secret.txt", # secret's path
+                        "TestFiles/EncodingDecodingTest/encoded/encoded_sphere.STL")  # path to save the carrier with secret
 
-decoder = DecoderSTL()
-decoder.DecodeFileFromSTL("TestFiles/encoded/encoded_sphere.STL", "TestFiles/decoded/decoded_secret.txt")
+decoder = DecoderSTL("TestFiles/EncodingDecodingTest/encoded/encoded_sphere.STL")  # carrier's with secret filepath
+decoder.DecodeFileFromSTL("TestFiles/EncodingDecodingTest/decoded/decoded_secret.txt")  # path to save the decoded carrier
