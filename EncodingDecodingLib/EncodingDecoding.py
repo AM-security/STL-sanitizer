@@ -1,6 +1,7 @@
 from string import Template
 import typing
 import array
+import hashlib
 
 
 class Vertex:
@@ -9,8 +10,8 @@ class Vertex:
         self.y = y
         self.z = z
 
-    # Returns string representation of a facet
-    def string(self):
+    # Returns string representation of a vertex
+    def string(self) -> str:
         return self.x + " " + self.y + " " + self.z
 
 
@@ -20,7 +21,6 @@ class Facet:
         self.vertex_2: Vertex = vertex_2
         self.vertex_3: Vertex = vertex_3
         self.normal: Vertex = normal
-        self.affected: bool = False
 
     # Returns string representation of a facet
     def string(self) -> str:
@@ -33,7 +33,7 @@ class Facet:
 
 
 class STLObject:
-    facets = []
+    facets: list[Facet] = []
     facet_idx: int = -1
 
     def __init__(self, filepath):
@@ -63,39 +63,28 @@ class STLObject:
 
         file.close()
 
-    def GetNextFacet(self):
+    def GetNextFacet(self) -> Facet:
         self.facet_idx += 1
         current_facet = self.facets[self.facet_idx]
         return current_facet
 
     def WriteToCurrentFacet(self, facet):
-        facet.affected = True
+        if self.facet_idx == -1:
+            print("failed to write to current facet, wrong facet index")
         self.facets[self.facet_idx] = facet
 
-    def FacetsCount(self):
+    def FacetsCount(self) -> int:
         return len(self.facets)
 
-    def string(self):
+    def string(self) -> str:
         facets_string = ""
         for facet in self.facets:
-            f = facet.string()
             facets_string += facet.string() + "\n"
 
         facets_string = facets_string[:-1]
         stl_file_string = Template('solid $obj_name\n$facets\n' + 'endsolid $obj_name\n')
-        stl_file_string = stl_file_string.safe_substitute(obj_name=self.obj_name, facets=facets_string)
-        return stl_file_string
-
-
-def LoadSTL(filepath: str) -> STLObject:
-    return STLObject(filepath)
-
-
-def Max(v1, v2):
-    if float(v1.x) + float(v1.y) + float(v1.z) > float(v2.x) + float(v2.y) + float(v2.z):
-        return v1
-    else:
-        return v2
+        res = stl_file_string.safe_substitute(obj_name=self.obj_name, facets=facets_string)
+        return res
 
 
 class DecoderSTL:
@@ -107,22 +96,29 @@ class DecoderSTL:
         file.write(secret_msg)
         file.close()
 
-    def DecodeFileFromSTL(self, fn_encoded, fn_secret_destination):
+    def DecodeFileFromSTL(self, fn_encoded: str, fn_secret_destination: str):
+        print('DecodeFileFromSTL')
+        print('    Carrier ...: ' + fn_encoded)
+        print('    Save secret as ...: ' + fn_secret_destination)
 
         carrier_stl = LoadSTL(fn_encoded)
         self.STL_obj = carrier_stl
 
         secret_size = self.DecodeSize()
-        secret_msg: list[str] = self.DecodeBytes(secret_size)
+        secret_msg: str = self.DecodeBytes(secret_size)
 
-        self.SaveDecodedSecretInFile("".join(secret_msg), fn_secret_destination)
+        print('    Decoded ...: ' + str(len(secret_msg)) + ' Bytes')
+        print('    Decoded MD5: ' + hashlib.md5(str.encode(secret_msg)).hexdigest())
 
-    def DecodeBit(self, facet):
+        self.SaveDecodedSecretInFile(secret_msg, fn_secret_destination)
+        print('    Decoding successful')
+
+    def DecodeBit(self, facet) -> int:
         if facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
             return 1
         return 0
 
-    def DecodeByte(self):
+    def DecodeByte(self) -> int:
         byte_value: int = 0x00
         bit_mask: int = 0x80
         for i in range(0, 8):
@@ -134,23 +130,23 @@ class DecoderSTL:
 
         return byte_value
 
-    def DecodeSize(self):
+    def DecodeSize(self) -> int:
         size_in_bytes: bytearray = bytearray()
         for idx in range(0, 4):
             byte = self.DecodeByte()
             size_in_bytes.append(byte)
 
-        size = int.from_bytes(size_in_bytes, "big")
+        size: int = int.from_bytes(size_in_bytes, "big")
         return size
 
-    def DecodeBytes(self, secret_size: int):
+    def DecodeBytes(self, secret_size: int) -> str:
         secret_msg: array = []
         for _ in range(0, secret_size):
             byte = self.DecodeByte()
             c = chr(byte)
             secret_msg.append(c)
 
-        return secret_msg
+        return "".join(secret_msg)
 
 
 class EncoderSTL:
@@ -158,19 +154,31 @@ class EncoderSTL:
         self.STL_obj: STLObject = None
 
     def EncodeFileInSTL(self, fn_original_stl: str, fn_secret: str, fn_destination_stl: str):
-        secret_bytes = open(fn_secret, "r").read()
-        secret_size = len(secret_bytes)
+        print('EncodeFileInSTL')
+        print('    Carrier ..: ' + fn_original_stl)
+        print('    Save As ..: ' + fn_destination_stl)
 
-        carrier_stl = LoadSTL(fn_original_stl)
+        secret_bytes: str = open(fn_secret, "r").read()
+        secret_size: int = len(secret_bytes)
+
+        carrier_stl: STLObject = LoadSTL(fn_original_stl)
         self.STL_obj = carrier_stl
 
-        carrier_capacity = carrier_stl.FacetsCount() / 8
+        carrier_capacity = carrier_stl.FacetsCount() / 8  # number of bytes
+
+        print('    Capacity .: ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
+        print('    Secret ...: ' + fn_secret + ' (' + str(secret_size) + ' Bytes)')
+        print('    Secret MD5: ' + hashlib.md5(str.encode(secret_bytes)).hexdigest())
 
         if carrier_capacity >= secret_size + 4:
             self.EncodeSize(secret_size)
             self.EncodeBytes(secret_bytes)
 
             self.SaveEncodedSTL(fn_destination_stl)
+            print('    Encoding successful')
+            return
+
+        print("Failed to encode secret into an STL file, carrier's capacity is not sufficient to encode the secret")
 
     def EncodeBit(self, facet: Facet, bit_value: int):
         if bit_value == 1:
@@ -193,7 +201,7 @@ class EncoderSTL:
         bit_mask: int = 0x80
 
         for i in range(0, 8):
-            facet = self.STL_obj.GetNextFacet()
+            facet: Facet = self.STL_obj.GetNextFacet()
             if byte_value & bit_mask:
                 self.EncodeBit(facet, 1)
             else:
@@ -202,7 +210,7 @@ class EncoderSTL:
 
     def EncodeSize(self, secret_size: int):
         size_in_bytes: bytes = secret_size.to_bytes(4, 'big')
-        for byte in size_in_bytes:  # byte is represented as `int`
+        for byte in size_in_bytes:  # byte is represented as `int` unicode
             self.EncodeByte(byte)
 
     def EncodeBytes(self, secret_bytes):
@@ -216,10 +224,51 @@ class EncoderSTL:
         file.close()
 
 
-if __name__ == '__main__':
-    encoder = EncoderSTL()
-    encoder.EncodeFileInSTL("test_files/original_sphere.STL", "test_files/secret.txt",
-                            "test_files/encoded/encoded_sphere.STL")
+def LoadSTL(filepath: str) -> STLObject:
+    return STLObject(filepath)
 
-    decoder = DecoderSTL()
-    decoder.DecodeFileFromSTL("test_files/encoded/encoded_sphere.STL", "test_files/decoded/decoded_secret.txt")
+
+# strings concatenation and comparison
+def MaxStringComparison(v1: Vertex, v2: Vertex) -> Vertex:
+    v1_str = v1.string()
+    v2_str = v2.string()
+    if v1_str > v2_str:
+        return v1
+    else:
+        return v2
+
+
+# Collisions are possible using this approach, but the probability of them to happen is low because of float numbers
+def MaxSumComparison(v1: Vertex, v2: Vertex) -> Vertex:
+    if float(v1.x) + float(v1.y) + float(v1.z) > float(v2.x) + float(v2.y) + float(v2.z):
+        return v1
+    else:
+        return v2
+
+
+def MaxNumbersComparison(v1: Vertex, v2: Vertex) -> Vertex:
+    # compare x coordinates. return Max(v1.x, v2.x)
+    if float(v1.x) > float(v2.x):
+        return v1
+    elif float(v1.x) < float(v2.x):
+        return v2
+
+    # compare y coordinates. return Max(v1.y, v2.y)
+    if float(v1.y) > float(v2.y):
+        return v1
+    elif float(v1.y) < float(v2.y):
+        return v2
+
+    # compare z coordinates. return Max(v1.z, v2.z)
+    if float(v1.z) > float(v2.z):
+        return v1
+    elif float(v1.z) < float(v2.z):
+        return v2
+
+    return v2
+
+
+# Default function for (v1,v2) comparison. configuration will be supported in the future
+def Max(v1: Vertex, v2: Vertex) -> Vertex:
+    return MaxSumComparison(v1, v2)
+
