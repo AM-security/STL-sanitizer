@@ -1,15 +1,7 @@
-import sys
 from string import Template
 import typing
 import array
 
-
-# 2 types of sanitizers
-# The first one is noticeable because every facet has v1 bigger than v2 and v3 so the bit of every facet is always 1
-
-
-# issues: 1) Parsing of STL files should be in another class
-# 2) Encoder and when the STL object is initialized
 
 class Vertex:
     def __init__(self, x, y, z):
@@ -17,6 +9,7 @@ class Vertex:
         self.y = y
         self.z = z
 
+    # Returns string representation of a facet
     def string(self):
         return self.x + " " + self.y + " " + self.z
 
@@ -29,7 +22,8 @@ class Facet:
         self.normal: Vertex = normal
         self.affected: bool = False
 
-    def string(self):
+    # Returns string representation of a facet
+    def string(self) -> str:
         string_facet = Template(
             '  facet normal $normal\n    outer loop\n      vertex $vertex1\n      vertex $vertex2\n      vertex '
             '$vertex3\n    endloop\n  endfacet')
@@ -45,39 +39,27 @@ class STLObject:
     def __init__(self, filepath):
         file = open(filepath, 'r')
 
-        line = file.readline()
         while True:
-            words_in_line = line.split(" ")
+            words_in_line = file.readline().strip().split(" ")
 
             if words_in_line[0] == "endsolid":
                 break
             if words_in_line[0] == "solid":
-                words_in_line[1] = words_in_line[1].strip()
-                self.obj_name = words_in_line[1]
+                self.obj_name = words_in_line[1].strip()
             if words_in_line[0] == "facet":
-                normal: Vertex = Vertex(words_in_line[2], words_in_line[3], words_in_line[4])  # x,y,z
-                line = file.readline()  # outer loop skip
+                normal: Vertex = Vertex(words_in_line[2], words_in_line[3], words_in_line[4])  # normal x,y,z
+                file.readline()  # skip "outer loop" line
 
-                line = file.readline()  # vertice 1
-                line = line.strip()
-                words_in_line = line.split(" ")
-                vertex_1 = Vertex(words_in_line[1], words_in_line[2], words_in_line[3])  # x,y,z
+                xyz_vertex_1 = file.readline().strip().split(" ")
+                vertex_1 = Vertex(xyz_vertex_1[1], xyz_vertex_1[2], xyz_vertex_1[3])  # vertex 1 x,y,z
 
-                line = file.readline()  # vertex 2
-                line = line.strip()
-                words_in_line = line.split(" ")
+                xyz_vertex_2 = file.readline().strip().split(" ")
+                vertex_2 = Vertex(xyz_vertex_2[1], xyz_vertex_2[2], xyz_vertex_2[3])  # vertex 2 x,y,z
 
-                vertex_2 = Vertex(words_in_line[1], words_in_line[2], words_in_line[3])  # x,y,z
-
-                line = file.readline()  # vertex 2
-                line = line.strip()
-                words_in_line = line.split(" ")
-                vertex_3 = Vertex(words_in_line[1], words_in_line[2], words_in_line[3])  # x,y,z
+                xyz_vertex_3 = file.readline().strip().split(" ")
+                vertex_3 = Vertex(xyz_vertex_3[1], xyz_vertex_3[2], xyz_vertex_3[3])  # vertex 3 x,y,z
 
                 self.facets.append(Facet(vertex_1, vertex_2, vertex_3, normal))
-
-            line = file.readline()
-            line = line.strip()
 
         file.close()
 
@@ -85,9 +67,6 @@ class STLObject:
         self.facet_idx += 1
         current_facet = self.facets[self.facet_idx]
         return current_facet
-
-    def GetCurrentFacet(self):
-        return self.facets[self.facet_idx]
 
     def WriteToCurrentFacet(self, facet):
         facet.affected = True
@@ -108,49 +87,35 @@ class STLObject:
         return stl_file_string
 
 
-def Max(v1, v2):
+def LoadSTL(filepath: str) -> STLObject:
+    return STLObject(filepath)
 
-    if float(v1.x) + float(v1.y) + float(v1.z) > float(v2.x) + float(v2.y) + float(v2.z) :
+
+def Max(v1, v2):
+    if float(v1.x) + float(v1.y) + float(v1.z) > float(v2.x) + float(v2.y) + float(v2.z):
         return v1
     else:
         return v2
-    # if float(v1.x) < float(v2.x):
-    #     return v2
-    # if float(v1.y) < float(v2.y):
-    #     return v2
-    # if float(v1.z) < float(v2.z):
-    #     return v2
-    #
-    # return v1
-
-
-def bitwise_and_bytes(a, b):
-    result_int = int.from_bytes(a, byteorder="big") & int.from_bytes(b, byteorder="big")
-    return result_int
-
-
-def bitwise_or_bytes(a, b):
-    result_int = int.from_bytes(a, byteorder="big") | int.from_bytes(b, byteorder="big")
-    return result_int
 
 
 class DecoderSTL:
     def __init__(self):
         self.STL_obj = None
 
-    def SaveDecodedSecretSTL(self, secret_msg, filename_destination):
+    def SaveDecodedSecretInFile(self, secret_msg, filename_destination):
         file = open(filename_destination, "w")
         file.write(secret_msg)
         file.close()
 
-    def DecodeMessageFromSTL(self, filename_encoded):
+    def DecodeFileFromSTL(self, fn_encoded, fn_secret_destination):
 
-        carrier_stl_obj = STLObject(filename_encoded)
-        self.STL_obj = carrier_stl_obj
+        carrier_stl = LoadSTL(fn_encoded)
+        self.STL_obj = carrier_stl
 
         secret_size = self.DecodeSize()
-        secret_msg = self.DecodeBytes(secret_size)
-        return secret_msg
+        secret_msg: list[str] = self.DecodeBytes(secret_size)
+
+        self.SaveDecodedSecretInFile("".join(secret_msg), fn_secret_destination)
 
     def DecodeBit(self, facet):
         if facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
@@ -158,8 +123,8 @@ class DecoderSTL:
         return 0
 
     def DecodeByte(self):
-        byte_value = 0x00
-        bit_mask = 0x80
+        byte_value: int = 0x00
+        bit_mask: int = 0x80
         for i in range(0, 8):
             facet = self.STL_obj.GetNextFacet()
             if self.DecodeBit(facet) == 1:
@@ -170,7 +135,7 @@ class DecoderSTL:
         return byte_value
 
     def DecodeSize(self):
-        size_in_bytes = bytearray()
+        size_in_bytes: bytearray = bytearray()
         for idx in range(0, 4):
             byte = self.DecodeByte()
             size_in_bytes.append(byte)
@@ -192,24 +157,22 @@ class EncoderSTL:
     def __init__(self):
         self.STL_obj: STLObject = None
 
-    def EncodeFileInSTL(self, filename_original_stl, filename_secret, filename_destination_stl):
-        file_secret = open(filename_secret, "r")
-        secret_bytes = file_secret.read()
-        secret_size = len(secret_bytes)  # check that
+    def EncodeFileInSTL(self, fn_original_stl: str, fn_secret: str, fn_destination_stl: str):
+        secret_bytes = open(fn_secret, "r").read()
+        secret_size = len(secret_bytes)
 
-        carrier_stl_obj = STLObject(filename_original_stl)
-        self.STL_obj = carrier_stl_obj
+        carrier_stl = LoadSTL(fn_original_stl)
+        self.STL_obj = carrier_stl
 
-        carrier_capacity = carrier_stl_obj.FacetsCount() / 8
+        carrier_capacity = carrier_stl.FacetsCount() / 8
 
         if carrier_capacity >= secret_size + 4:
             self.EncodeSize(secret_size)
             self.EncodeBytes(secret_bytes)
-            self.SaveEncodedSTL(filename_destination_stl)
 
-        file_secret.close()
+            self.SaveEncodedSTL(fn_destination_stl)
 
-    def EncodeBit(self, facet, bit_value):
+    def EncodeBit(self, facet: Facet, bit_value: int):
         if bit_value == 1:
             if facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
                 return
@@ -227,7 +190,7 @@ class EncoderSTL:
         self.STL_obj.WriteToCurrentFacet(facet)
 
     def EncodeByte(self, byte_value: int):
-        bit_mask = 0x80
+        bit_mask: int = 0x80
 
         for i in range(0, 8):
             facet = self.STL_obj.GetNextFacet()
@@ -252,10 +215,11 @@ class EncoderSTL:
         file.write(self.STL_obj.string())
         file.close()
 
+
 if __name__ == '__main__':
     encoder = EncoderSTL()
-    encoder.EncodeFileInSTL("test_files/original_sphere.STL", "test_files/secret.txt", "test_files/encoded/encoded_sphere.STL")
+    encoder.EncodeFileInSTL("test_files/original_sphere.STL", "test_files/secret.txt",
+                            "test_files/encoded/encoded_sphere.STL")
 
     decoder = DecoderSTL()
-    secret = decoder.DecodeMessageFromSTL("test_files/encoded/encoded_sphere.STL")
-    decoder.SaveDecodedSecretSTL("".join(secret), "test_files/decoded/decoded_secret.txt")
+    decoder.DecodeFileFromSTL("test_files/encoded/encoded_sphere.STL", "test_files/decoded/decoded_secret.txt")
