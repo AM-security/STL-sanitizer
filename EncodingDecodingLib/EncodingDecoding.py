@@ -36,10 +36,11 @@ class Facet:
 
 
 class STLObject:
-    facets: list[Facet] = []
-    facet_idx: int = -1
+
 
     def __init__(self, filepath):
+        self.facets: list[Facet] = []
+        self.facet_idx: int = -1
         file = open(filepath, 'r')
 
         while True:
@@ -151,9 +152,6 @@ class DecoderSTL:
             secret_msg.append(byte)
 
         return secret_msg
-
-    def __del__(self):
-        print("Decoder deleted")
 
 
 class EncoderSTL:

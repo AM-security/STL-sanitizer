@@ -1,44 +1,47 @@
 from SanitizersLib.SanitizerRandom import SanitizerRandom
 from EncodingDecodingLib.EncodingDecoding import DecoderSTL
 
+SECRET_SIZE_BITS = 4 * 8  # size of any secret = 4 bytes
 
-# Test 1. Infiltrated text
 
-def Test1():
+# Infiltrated text
+def SanitizeTextTest():
     # Decoding before sanitization
-    decoder_before = DecoderSTL("TestFiles/SanitizerRandomTest/1/encoded_sphere.STL")  # carrier's with secret filepath
+    decoder_before = DecoderSTL("tests/SanitizerRandomTest/text/encoded_sphere.STL")  # carrier's with secret filepath
     decoder_before.DecodeFileFromSTL(
-        "TestFiles/SanitizerRandomTest/1/secret_before.txt")  # path to save the decoded carrier
+        "tests/SanitizerRandomTest/text/secret_before.txt")  # path to save the decoded carrier
 
-    sanitizer = SanitizerRandom("TestFiles/SanitizerRandomTest/1/encoded_sphere.STL")  # carrier's filepath
-    sanitizer.Sanitize()
+    sanitizer = SanitizerRandom("tests/SanitizerRandomTest/text/encoded_sphere.STL")  # carrier's filepath
+    sanitizer.Sanitize(SECRET_SIZE_BITS)
     sanitizer.SaveSanitizedFile(
-        "TestFiles/SanitizerRandomTest/1/sanitized_sphere.STL")  # filepath destination for sanitized stl file
+        "tests/SanitizerRandomTest/text/sanitized_sphere.STL")  # filepath destination for sanitized stl file
 
     # Decoding after sanitization
-    decoder_after = DecoderSTL("TestFiles/SanitizerRandomTest/1/sanitized_sphere.STL")  # carrier's with secret filepath
+    decoder_after = DecoderSTL("tests/SanitizerRandomTest/text/sanitized_sphere.STL")  # carrier's with secret filepath
     decoder_after.DecodeFileFromSTL(
-        "TestFiles/SanitizerRandomTest/1/secret_after.txt")  # path to save the decoded carrier
+        "tests/SanitizerRandomTest/text/secret_after.txt")  # path to save the decoded carrier
+    print("\n")
 
 
-# Test 2. Infiltrated picture of elephant
-def Test2():
+# Infiltrated picture of elephant
+def SanitizePictureTest():
     # Decoding before sanitization
 
-    decoder_before = DecoderSTL("TestFiles/SanitizerRandomTest/2/encoded_bunny.STL")  # carrier's with secret filepath
+    decoder_before = DecoderSTL("tests/SanitizerRandomTest/image/encoded_bunny.STL")  # carrier's with secret filepath
     decoder_before.DecodeFileFromSTL(
-        "TestFiles/SanitizerRandomTest/2/secret_before.jpeg")  # path to save the decoded carrier
+        "tests/SanitizerRandomTest/image/secret_before.jpeg")  # path to save the decoded carrier
 
-    sanitizer = SanitizerRandom("TestFiles/SanitizerRandomTest/2/encoded_bunny.STL")  # carrier's filepath
-    sanitizer.Sanitize()
+    sanitizer = SanitizerRandom("tests/SanitizerRandomTest/image/encoded_bunny.STL")  # carrier's filepath
+    sanitizer.Sanitize(SECRET_SIZE_BITS + 325 * 8)  # 325 * 8
     sanitizer.SaveSanitizedFile(
-        "TestFiles/SanitizerRandomTest/2/sanitized_bunny.STL")  # filepath destination for sanitized stl file
+        "tests/SanitizerRandomTest/image/sanitized_bunny.STL")  # filepath destination for sanitized stl file
 
     # Decoding after sanitization
-    decoder_after = DecoderSTL("TestFiles/SanitizerRandomTest/2/sanitized_bunny.STL")  # carrier's with secret filepath
+    decoder_after = DecoderSTL("tests/SanitizerRandomTest/image/sanitized_bunny.STL")  # carrier's with secret filepath
     decoder_after.DecodeFileFromSTL(
-        "TestFiles/SanitizerRandomTest/2/secret_after.jpeg")  # path to save the decoded carrier
+        "tests/SanitizerRandomTest/image/secret_after.jpeg")  # path to save the decoded carrier
+    print("\n")
 
 
-Test1()
-# Test2()
+SanitizeTextTest()
+SanitizePictureTest()
