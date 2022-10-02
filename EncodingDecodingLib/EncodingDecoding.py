@@ -127,6 +127,7 @@ class DecoderSTL:
     def DecodeByte(self) -> int:
         byte_value: int = 0x00
         bit_mask: int = 0x80
+
         for i in range(0, 8):
             facet = self.carrier_stl.GetNextFacet()
             if self.DecodeBit(facet) == 1:
@@ -148,9 +149,8 @@ class DecoderSTL:
     def DecodeBytes(self, secret_size: int):
         secret_msg: array = []
         for _ in range(0, secret_size):
-            byte = self.DecodeByte()
+            byte: int = self.DecodeByte()
             secret_msg.append(byte)
-
         return secret_msg
 
 

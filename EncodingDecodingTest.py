@@ -26,5 +26,18 @@ def EncodeDecodePictureTest():
     print("\n")
 
 
+# Test image. infiltrating elephant_secret.jpeg into bunny stl file
+def EncodeDecodeBitmapTest():
+    encoder = EncoderSTL("tests/EncodingDecodingTest/bitmap/bunny.STL")  # carrier's filepath
+    encoder.EncodeFileInSTL("tests/EncodingDecodingTest/bitmap/secret.bmp",  # secret's path
+                            "tests/EncodingDecodingTest/bitmap/encoded/encoded_bunny.STL")  # path to save the carrier with secret
+
+    decoder = DecoderSTL("tests/EncodingDecodingTest/bitmap/encoded/encoded_bunny.STL")  # carrier's with secret filepath
+    decoder.DecodeFileFromSTL(
+        "tests/EncodingDecodingTest/bitmap/decoded/decoded_secret.bmp")  # path to save the decoded secret
+    print("\n")
+
+
 EncodeDecodeTextTest()
 EncodeDecodePictureTest()
+EncodeDecodeBitmapTest()
