@@ -2,6 +2,11 @@ from string import Template
 import typing
 import array
 import hashlib
+import numpy as np
+
+base3 = "base3"
+base2 = "base2"
+byte_len_base3 = 6
 
 
 class Vertex:
@@ -36,7 +41,6 @@ class Facet:
 
 
 class STLObject:
-
 
     def __init__(self, filepath):
         self.facets: list[Facet] = []
@@ -104,13 +108,13 @@ class DecoderSTL:
         file.write(secret_msg)
         file.close()
 
-    def DecodeFileFromSTL(self, fn_secret_destination: str):
+    def DecodeFileFromSTL(self, fn_secret_destination: str, base: str):
         print('DecodeFileFromSTL')
         print('    Carrier ...: ' + self.fn_encoded_stl)
         print('    Save secret as ...: ' + fn_secret_destination)
 
-        secret_size = self.DecodeSize()
-        secret_msg = self.DecodeBytes(secret_size)
+        secret_size = self.DecodeSize(base)
+        secret_msg = self.DecodeBytes(secret_size, base)
         secret_msg = bytes(secret_msg)
 
         print('    Decoded ...: ' + str(len(secret_msg)) + ' Bytes')
@@ -123,6 +127,14 @@ class DecoderSTL:
         if facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
             return 1
         return 0
+
+    def DecodeBitBase3(self, facet) -> int:
+        if facet.vertex_2 == Max(facet.vertex_2, Max(facet.vertex_1, facet.vertex_3)):
+            return 2
+        elif facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
+            return 1
+        else:
+            return 0
 
     def DecodeByte(self) -> int:
         byte_value: int = 0x00
@@ -137,19 +149,44 @@ class DecoderSTL:
 
         return byte_value
 
-    def DecodeSize(self) -> int:
+    def DecodeByteBase3(self) -> int:
+        ternary: str = ""
+
+        for i in range(0, byte_len_base3):
+            facet = self.carrier_stl.GetNextFacet()
+            bit = self.DecodeBit(facet)
+            ternary = str(bit) + ternary
+
+        res = int(ternary, 3)
+        return res
+
+    def DecodeSize(self, base: str) -> int:
         size_in_bytes: bytearray = bytearray()
         for idx in range(0, 4):
-            byte = self.DecodeByte()
+            byte = 0
+            if base == base2:
+                byte = self.DecodeByte()
+            elif base == base3:
+                byte = self.DecodeByteBase3()
+            else:
+                print("failed to decode size, wrong base")
+                exit(1)
             size_in_bytes.append(byte)
 
         size: int = int.from_bytes(size_in_bytes, "big")
         return size
 
-    def DecodeBytes(self, secret_size: int):
+    def DecodeBytes(self, secret_size: int, base: str):
         secret_msg: array = []
         for _ in range(0, secret_size):
-            byte: int = self.DecodeByte()
+            byte = 0
+            if base == base2:
+                byte = self.DecodeByte()
+            elif base == base3:
+                byte = self.DecodeByteBase3()
+            else:
+                print("failed to decode bytes, wrong base")
+                exit(1)
             secret_msg.append(byte)
         return secret_msg
 
@@ -160,7 +197,7 @@ class EncoderSTL:
         self.carrier_stl: STLObject = carrier_stl
         self.fn_original_stl = fn_original_stl
 
-    def EncodeFileInSTL(self, fn_secret: str, fn_destination_stl: str):
+    def EncodeFileInSTL(self, fn_secret: str, fn_destination_stl: str, base: str):
         print('EncodeFileInSTL')
         print('    Carrier ..: ' + self.fn_original_stl)
         print('    Save As ..: ' + fn_destination_stl)
@@ -175,8 +212,8 @@ class EncoderSTL:
         print('    Secret MD5: ' + hashlib.md5(secret_bytes).hexdigest())
 
         if carrier_capacity >= secret_size + 4:
-            self.EncodeSize(secret_size)
-            self.EncodeBytes(secret_bytes)
+            self.EncodeSize(secret_size, base)
+            self.EncodeBytes(secret_bytes, base)
 
             self.SaveEncodedSTL(fn_destination_stl)
             print('    Encoding successful')
@@ -201,6 +238,41 @@ class EncoderSTL:
 
         self.carrier_stl.WriteToCurrentFacet(facet)
 
+    def EncodeBitBase3(self, facet: Facet, bit_value: int):  # test it
+        if bit_value != 1 and bit_value != 2 and bit_value != 3:
+            print("failed to encode a bit value, not base 3")
+            exit(1)
+        if bit_value == 2:
+            if facet.vertex_2 == Max(facet.vertex_2, Max(facet.vertex_1, facet.vertex_3)):
+                return
+            elif facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
+                # Rotate right
+                facet.vertex_1, facet.vertex_2, facet.vertex_3 = facet.vertex_3, facet.vertex_1, facet.vertex_2
+            else:
+                # Rotate left
+                facet.vertex_1, facet.vertex_2, facet.vertex_3 = facet.vertex_2, facet.vertex_3, facet.vertex_1
+
+        if bit_value == 1:
+            if facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
+                return
+            elif facet.vertex_2 == Max(facet.vertex_2, Max(facet.vertex_1, facet.vertex_3)):
+                # Rotate left
+                facet.vertex_1, facet.vertex_2, facet.vertex_3 = facet.vertex_2, facet.vertex_3, facet.vertex_1
+            else:
+                # Rotate right
+                facet.vertex_1, facet.vertex_2, facet.vertex_3 = facet.vertex_3, facet.vertex_1, facet.vertex_2
+        if bit_value == 0:
+            if facet.vertex_3 == Max(facet.vertex_3, Max(facet.vertex_1, facet.vertex_2)):
+                return
+            elif facet.vertex_2 == Max(facet.vertex_2, Max(facet.vertex_1, facet.vertex_3)):
+                # Rotate right
+                facet.vertex_1, facet.vertex_2, facet.vertex_3 = facet.vertex_3, facet.vertex_1, facet.vertex_2
+            else:
+                # Rotate left
+                facet.vertex_1, facet.vertex_2, facet.vertex_3 = facet.vertex_2, facet.vertex_3, facet.vertex_1
+
+        self.carrier_stl.WriteToCurrentFacet(facet)
+
     def EncodeByte(self, byte_value: int):
         bit_mask: int = 0x80
 
@@ -212,14 +284,32 @@ class EncoderSTL:
                 self.EncodeBit(facet, 0)
             bit_mask = bit_mask >> 1
 
-    def EncodeSize(self, secret_size: int):
+    def EncodeByteBase3(self, byte_value: int):
+        ternary = np.base_repr(byte_value, base=3)
+
+        diff_len = byte_len_base3 - len(ternary)
+        for i in range(0, diff_len):
+            ternary = "0" + ternary
+
+        # ternary is supposed to have len 6
+        for i in range(0, len(ternary)):
+            facet: Facet = self.carrier_stl.GetNextFacet()
+            self.EncodeBitBase3(facet, int(ternary[i]))
+
+    def EncodeSize(self, secret_size: int, base: str):
         size_in_bytes: bytes = secret_size.to_bytes(4, 'big')
         for byte in size_in_bytes:  # byte is represented as `int` unicode
-            self.EncodeByte(byte)
+            if base == base2:
+                self.EncodeByte(byte)
+            if base == base3:
+                self.EncodeByteBase3(byte)
 
-    def EncodeBytes(self, secret_bytes):
+    def EncodeBytes(self, secret_bytes, base: str):
         for byte in secret_bytes:
-            self.EncodeByte(byte)
+            if base == base2:
+                self.EncodeByte(byte)
+            if base == base3:
+                self.EncodeByteBase3(byte)
 
     def SaveEncodedSTL(self, fn_destination):
         file = open(fn_destination, "w")
