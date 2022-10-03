@@ -63,6 +63,29 @@ def SanitizeBmpTest():
     print("\n")
 
 
+# Infiltrated picture of elephant
+def SanitizeBmpTestBase3():
+    # Decoding before sanitization
+    decoder_before = DecoderSTL(
+        "tests/SanitizerRandomTest/base3/bitmap/encoded_bunny.STL")  # carrier's with secret filepath
+    decoder_before.DecodeFileFromSTL(
+        "tests/SanitizerRandomTest/base3/bitmap/secret_before.bmp", base3)  # path to save the decoded carrier
+
+    # secret's size is 90 bytes = 720 bits
+    sanitizer = SanitizerRandom("tests/SanitizerRandomTest/base3/bitmap/encoded_bunny.STL")  # carrier's filepath
+    sanitizer.Sanitize(SECRET_SIZE_BITS + 300)  # 325 * 8
+    sanitizer.SaveSanitizedFile(
+        "tests/SanitizerRandomTest/base3/bitmap/sanitized_bunny.STL")  # filepath destination for sanitized stl file
+
+    # Decoding after sanitization
+    decoder_after = DecoderSTL(
+        "tests/SanitizerRandomTest/base3/bitmap/sanitized_bunny.STL")  # carrier's with secret filepath
+    decoder_after.DecodeFileFromSTL(
+        "tests/SanitizerRandomTest/base3/bitmap/secret_after.bmp", base3)  # path to save the decoded carrier
+    print("\n")
+
+
 #
 #
 SanitizeBmpTest()
+SanitizeBmpTestBase3()

@@ -154,8 +154,8 @@ class DecoderSTL:
 
         for i in range(0, byte_len_base3):
             facet = self.carrier_stl.GetNextFacet()
-            bit = self.DecodeBit(facet)
-            ternary = str(bit) + ternary
+            bit = self.DecodeBitBase3(facet)
+            ternary = ternary + str(bit)
 
         res = int(ternary, 3)
         return res
@@ -205,9 +205,14 @@ class EncoderSTL:
         secret_bytes = open(fn_secret, "rb").read()
         secret_size: int = len(secret_bytes)
 
-        carrier_capacity = self.carrier_stl.FacetsCount() / 8  # number of bytes
+        if base == base2:
+            carrier_capacity = self.carrier_stl.FacetsCount() / 8  # number of bytes
+            print('Base2 Capacity: ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
+        if base == base3:
+            carrier_capacity = self.carrier_stl.FacetsCount() / 6  # number of bytes
+            print('Base3 Capacity: ' + str(carrier_capacity * 6) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
 
-        print('    Capacity .: ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
+
         print('    Secret ...: ' + fn_secret + ' (' + str(secret_size) + ' Bytes)')
         print('    Secret MD5: ' + hashlib.md5(secret_bytes).hexdigest())
 
@@ -239,7 +244,7 @@ class EncoderSTL:
         self.carrier_stl.WriteToCurrentFacet(facet)
 
     def EncodeBitBase3(self, facet: Facet, bit_value: int):  # test it
-        if bit_value != 1 and bit_value != 2 and bit_value != 3:
+        if bit_value != 2 and bit_value != 1 and bit_value != 0:
             print("failed to encode a bit value, not base 3")
             exit(1)
         if bit_value == 2:
