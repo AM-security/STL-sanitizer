@@ -1,4 +1,4 @@
-from EncodingDecodingLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2, base3
+from EncodingDecodingVertexChLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2, base3
 
 
 # Test text. infiltrating secret.txt into sphere stl file
@@ -71,8 +71,8 @@ def EncodeDecodeBitmapTestBase3():
 
 
 EncodeDecodeTextTestBase2()
-EncodeDecodePictureTestBase2()
-EncodeDecodeBitmapTestBase2()
-
-EncodeDecodeTextTestBase3()
-EncodeDecodeBitmapTestBase3()
+# EncodeDecodePictureTestBase2()
+# EncodeDecodeBitmapTestBase2()
+#
+# EncodeDecodeTextTestBase3()
+# EncodeDecodeBitmapTestBase3()
