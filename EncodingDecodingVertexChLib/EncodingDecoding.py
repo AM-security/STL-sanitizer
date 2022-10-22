@@ -368,4 +368,4 @@ def MaxNumbersComparison(v1: Vertex, v2: Vertex) -> Vertex:
 
 # Default function for (v1,v2) comparison. configuration will be supported in the future
 def Max(v1: Vertex, v2: Vertex) -> Vertex:
-    return MaxSumComparison(v1, v2)
+    return MaxNumbersComparison(v1, v2)
