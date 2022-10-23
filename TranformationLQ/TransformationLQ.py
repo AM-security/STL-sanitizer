@@ -111,6 +111,8 @@ class TranformatorHQ2LQ:
         self.fn_original_stl = fn_original_stl
         self.LQ2HQ_List: list[Facet] = []
 
+        self.same_value_dict = {}
+
     # vertex stego channel
     def GenerateSTLTransformation(self) -> list[Facet]:
         number_of_facets = self.carrier_stl.FacetsCount()
@@ -132,64 +134,46 @@ class TranformatorHQ2LQ:
 
     # normal vector is the same
     def GenTransformedFacet(self, facet: Facet) -> TransformationPair:
-        sign: int = secrets.choice([0, 1])  # 0 is "-", 1 is "+"
+            vertices: list[Vertex] = [facet.vertex_1, facet.vertex_2, facet.vertex_3]
+            new_vertices: list[Vertex] = []
+            for v in vertices:
+                new_v = self.TransformVertex(v)
+                new_vertices.append(new_v)
 
-        number = random.choice(range(10000, 20000))
-        number_float = number / 1000000
-
-        if sign == 0:
-            v1x = float(facet.vertex_1.x) - number_float
-            v1y = float(facet.vertex_1.y) - number_float
-            v1z = float(facet.vertex_1.z) - number_float
-
-            v2x = float(facet.vertex_2.x) - number_float
-            v2y = float(facet.vertex_2.y) - number_float
-            v2z = float(facet.vertex_2.z) - number_float
-
-            v3x = float(facet.vertex_3.x) - number_float
-            v3y = float(facet.vertex_3.y) - number_float
-            v3z = float(facet.vertex_3.z) - number_float
-
-            new_v1 = Vertex(str(v1x), str(v1y), str(v1z))
-            new_v2 = Vertex(str(v2x), str(v2y), str(v2z))
-            new_v3 = Vertex(str(v3x), str(v3y), str(v3z))
-
-            normal_x = float(facet.normal.x) - number_float
-            normal_y = float(facet.normal.y) - number_float
-            normal_z = float(facet.normal.z) - number_float
-
-            new_normal = Vertex(str(normal_x), str(normal_y), str(normal_z))
-
-            new_facet = Facet(new_v1, new_v2, new_v3, new_normal)
-
+            new_facet = Facet(new_vertices[0], new_vertices[1], new_vertices[2], facet.normal)
             return TransformationPair(facet, new_facet)
+
+    def TransformVertex(self, v: Vertex) -> Vertex:
+        if v.string() in self.same_value_dict:
+            vertex_from_cache = self.same_value_dict.get(v.string())
+            print('from cache')
+            return vertex_from_cache
         else:
-            v1x = float(facet.vertex_1.x) + number_float
-            v1y = float(facet.vertex_1.y) + number_float
-            v1z = float(facet.vertex_1.z) + number_float
 
-            v2x = float(facet.vertex_2.x) + number_float
-            v2y = float(facet.vertex_2.y) + number_float
-            v2z = float(facet.vertex_2.z) + number_float
+            coordinates: list[float] = [float(v.x), float(v.y), float(v.z)]
+            new_coordinates: list[float] = []
+            for coordinate in coordinates:
+                sign: int = secrets.choice([0, 1])  # 0 is "-", 1 is "+"
+                number = random.choice(range(1000, 80000))  # range(0.1,1) # 1000 - 10000 / 10000000
+                change = number / 10000000
 
-            v3x = float(facet.vertex_3.x) + number_float
-            v3y = float(facet.vertex_3.y) + number_float
-            v3z = float(facet.vertex_3.z) + number_float
+                new_coordinate = self.TransformCoordinate(coordinate, change, sign)
+                new_coordinates.append(new_coordinate)
 
-            new_v1 = Vertex(str(v1x), str(v1y), str(v1z))
-            new_v2 = Vertex(str(v2x), str(v2y), str(v2z))
-            new_v3 = Vertex(str(v3x), str(v3y), str(v3z))
+            new_vertex = Vertex(str(new_coordinates[0]), str(new_coordinates[1]), str(new_coordinates[2]))
 
-            normal_x = float(facet.normal.x) + number_float
-            normal_y = float(facet.normal.y) + number_float
-            normal_z = float(facet.normal.z) + number_float
+            self.same_value_dict[v.string()] = new_vertex
 
-            new_normal = Vertex(str(normal_x), str(normal_y), str(normal_z))
+            return new_vertex
 
-            new_facet = Facet(new_v1, new_v2, new_v3, new_normal)
+    def TransformCoordinate(self, coordinate: float, change: float, sign: int) -> float:
+        new_coordinate: float
+        if sign == 0:
+            new_coordinate = coordinate + change
+        else:
+            new_coordinate = coordinate - change
 
-            return TransformationPair(facet, new_facet)
-
+        return new_coordinate  # check if it's updatable
 
     def TransformSTLFile(self, fn_destination_stl: str):
         print('TransformSTLFile')
@@ -197,8 +181,6 @@ class TranformatorHQ2LQ:
         print('    Save As ..: ' + fn_destination_stl)
 
         LQ2HQ: list[Facet] = self.GenerateSTLTransformation()
-
-
 
         self.SaveTransformedSTL(fn_destination_stl)
         print('    Transformation successful')
@@ -212,4 +194,3 @@ class TranformatorHQ2LQ:
 
 def LoadSTL(filepath: str) -> STLObject:
     return STLObject(filepath)
-
