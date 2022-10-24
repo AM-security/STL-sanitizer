@@ -21,5 +21,15 @@ def TransformAndRestoreBall():
     print("\n")
 
 
-TransformBall()
+def TransformAndRestoreBall():
+    transformator = TranformatorHQ2LQ("tests/TransformationLQTest/deserialization/ball.stl")
+    transformator.TransformAndEncodeIntoSTLFile("tests/TransformationLQTest/deserialization/LQ_ball.stl")
+
+    recover = TranformatorHQ2LQ("tests/TransformationLQTest/deserialization/LQ_ball.stl")
+    recover.RestoreOriginalHQSTL("tests/TransformationLQTest/deserialization/recovered_HQ_ball.stl")
+    print("\n")
+
+
+# TransformBall()
+TransformAndRestoreBall()
 # TransformBunny()

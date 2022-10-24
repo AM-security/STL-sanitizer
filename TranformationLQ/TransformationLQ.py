@@ -309,49 +309,44 @@ class TranformatorHQ2LQ:
             print('ERROR: Capacity exceeded')
             return
 
-        encoder = EncoderSTL(self.fn_original_stl) # fake loading
-        encoder.carrier_stl = self.carrier_stl # switching
+        encoder = EncoderSTL(self.fn_original_stl)  # fake loading
+        encoder.carrier_stl = self.carrier_stl  # switching
         encoder.fn_original_stl = self.fn_original_stl
 
         encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
-
-
-
-
 
         # facets_recovery_decoded = self.DecodeLQ2HQSequence(secret_sequence)  # TODO run some tests to compare
 
         print('    Transformation successful')
         return
 
-    # def RestoreOriginalHQSTL(self, fn_destination_stl: str):
-    #     print('RestoreSTLFile')
-    #     print('    Carrier ..: ' + self.fn_original_stl)
-    #     print('    Save As ..: ' + fn_destination_stl)
-    #     capacity = self.carrier_stl.FacetsCount() / 8
-    #     print('    Capacity .: ' + str(capacity) + ' bytes')
-    #     print("\n")
-    #     facets_recovery: list[FacetRecovery] = self.GenerateSomeSTLTransformation()
-    #
-    #     secret_sequence: bytearray = self.EncodeLQ2HQSequence(facets_recovery)
-    #
-    #     if len(secret_sequence) > capacity:
-    #         print('ERROR: Capacity exceeded')
-    #         return
-    #
-    #     encoder = EncoderSTL(self.fn_original_stl)  # fake loading
-    #     encoder.carrier_stl = self.carrier_stl  # switching
-    #     encoder.fn_original_stl = self.fn_original_stl
-    #
-    #     encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
-    #
-    #     # facets_recovery_decoded = self.DecodeLQ2HQSequence(secret_sequence)  # TODO run some tests to compare
-    #
-    #     print('    Restoring successful')
-    #     return
+    def RestoreOriginalHQSTL(self, fn_destination_stl: str):
+        print('RestoreSTLFile')
+        print('    Carrier ..: ' + self.fn_original_stl)
+        print('    Save As ..: ' + fn_destination_stl)
+        capacity = self.carrier_stl.FacetsCount() / 8
+        print('    Capacity .: ' + str(capacity) + ' bytes')
+        print("\n")
+        facets_recovery: list[FacetRecovery] = self.GenerateSomeSTLTransformation()
 
-    #
-    # def GetLQ2HQSequence(self, lq2hq: list[Facet]):
+        secret_sequence: bytearray = self.EncodeLQ2HQSequence(facets_recovery)
+
+        if len(secret_sequence) > capacity:
+            print('ERROR: Capacity exceeded')
+            return
+
+        decoder = DecoderSTL(self.fn_original_stl)  # fake loading
+        decoder.carrier_stl = self.carrier_stl  # switching
+        decoder.fn_original_stl = self.fn_original_stl
+
+        sequence = decoder.DecodeBytesFromSTL(base2)
+        facets_recovery = self.DecodeLQ2HQSequence(sequence)
+
+        restored_HQ_obj = self.RestoreHQ(facets_recovery, self.carrier_stl)
+        # facets_recovery_decoded = self.DecodeLQ2HQSequence(secret_sequence)  # TODO run some tests to compare
+        self.SaveRestoredHQSTL(fn_destination_stl, restored_HQ_obj)
+        print('    Restoring successful')
+        return
 
     def EncodeLQ2HQSequence(self, lq2hq: list[FacetRecovery]) -> bytearray:
         secret: bytearray = bytearray()

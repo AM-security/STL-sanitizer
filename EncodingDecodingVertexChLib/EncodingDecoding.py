@@ -123,6 +123,19 @@ class DecoderSTL:
         self.SaveDecodedSecretInFile(secret_msg, fn_secret_destination)
         print('    Decoding successful')
 
+    def DecodeBytesFromSTL(self, base: str) -> bytearray:
+        print('DecodeFileFromSTL')
+        print('    Carrier ...: ' + self.fn_encoded_stl)
+
+        secret_size = self.DecodeSize(base)
+        secret_msg = self.DecodeBytes(secret_size, base)
+        secret_msg = bytes(secret_msg)
+
+        print('    Decoded ...: ' + str(len(secret_msg)) + ' Bytes')
+        print('    Decoded MD5: ' + hashlib.md5(secret_msg).hexdigest())
+        print('    Decoding successful')
+        return bytearray(secret_msg)
+
     def DecodeBit(self, facet) -> int:
         if facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
             return 1
