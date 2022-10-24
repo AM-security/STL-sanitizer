@@ -7,9 +7,8 @@ import numpy as np
 import secrets
 import struct
 import math
+from EncodingDecodingVertexChLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2
 
-base3 = "base3"
-base2 = "base2"
 byte_len_base3 = 6
 
 
@@ -40,6 +39,7 @@ class Facet:
             return True
         else:
             return False
+
     # Returns string representation of a facet
     def string(self) -> str:
         string_facet = Template(
@@ -91,6 +91,12 @@ class STLObject:
             print("failed to write to current facet, wrong facet index")
             return
         self.facets[self.facet_idx] = facet
+
+    def WriteToSpecificFacet(self, facet: Facet, idx: int):
+        if idx < 0:
+            print("failed to write to specific facet, wrong facet index")
+            return
+        self.facets[idx] = facet
 
     def FacetsCount(self) -> int:
         return len(self.facets)
@@ -177,17 +183,13 @@ class TranformatorHQ2LQ:
         capacity = capacity - 4  # the first thing we do is to ensure space for the size of the secret
 
         while capacity > self.SingleSequenceSize + 4:  # single sequence size + the size of the secret
-            affected = True
             cur_facet = self.carrier_stl.GetNextFacet()
 
             transformation_pair: TransformationPair = self.GenTransformedFacet(cur_facet, self.carrier_stl.facet_idx)
-
-            self.ApplySingleTranformation(transformation_pair.new_facet)
-
-            if affected:
+            if self.IsAtLeastOneVertexCached(cur_facet):
+                self.ApplySingleTranformation(transformation_pair.new_facet)
                 self.LQ2HQ_List.append(transformation_pair.facet_recovery)
-
-            capacity -= self.SingleSequenceSize
+                capacity -= self.SingleSequenceSize
 
             self.IsGenericFacet = False
 
@@ -203,7 +205,7 @@ class TranformatorHQ2LQ:
         vertices: list[Vertex] = [facet.vertex_1, facet.vertex_2, facet.vertex_3]
         new_vertices: list[Vertex] = []
         for v in vertices:
-            new_v, v_recovery = self.TransformVertex(v)
+            new_v, v_recovery = self.TransformVertex(v, self.IsAtLeastOneVertexCached(facet))
             new_vertices.append(new_v)
             vertices_recovery.append(v_recovery)
 
@@ -220,7 +222,8 @@ class TranformatorHQ2LQ:
         if f.vertex_3.string() in self.same_value_dict:
             return True
         return False
-    def TransformVertex(self, v: Vertex):
+
+    def TransformVertex(self, v: Vertex, isFacetAffected: bool):
 
         if v.string() in self.same_value_dict:
             vertex_from_cache = self.same_value_dict.get(v.string())
@@ -253,9 +256,13 @@ class TranformatorHQ2LQ:
 
             new_vertex = Vertex(str(new_coordinates[0]), str(new_coordinates[1]), str(new_coordinates[2]))
 
-            self.same_value_dict[v.string()] = new_vertex
-            self.same_value_dict_recovery[v.string()] = vertex_recovery
-
+            if self.IsGenericFacet:
+                self.same_value_dict[v.string()] = new_vertex
+                self.same_value_dict_recovery[v.string()] = vertex_recovery
+            else:
+                if isFacetAffected:
+                    self.same_value_dict[v.string()] = new_vertex
+                    self.same_value_dict_recovery[v.string()] = vertex_recovery
             return new_vertex, vertex_recovery
 
     def TransformCoordinate(self, coordinate: float, change: float, sign: int) -> float:
@@ -279,13 +286,69 @@ class TranformatorHQ2LQ:
 
         secret_sequence: bytearray = self.EncodeLQ2HQSequence(facets_recovery)
 
-        facets_recovery_decoded = self.DecodeLQ2HQSequence(secret_sequence) # TODO run some tests to compare
+        facets_recovery_decoded = self.DecodeLQ2HQSequence(secret_sequence)  # TODO run some tests to compare
 
         # check if enough capacity for encoding the sequence
 
         self.SaveTransformedSTL(fn_destination_stl)
         print('    Transformation successful')
         return
+
+    def TransformAndEncodeIntoSTLFile(self, fn_destination_stl: str):
+        print('TransformSTLFile')
+        print('    Carrier ..: ' + self.fn_original_stl)
+        print('    Save As ..: ' + fn_destination_stl)
+        capacity = self.carrier_stl.FacetsCount() / 8
+        print('    Capacity .: ' + str(capacity) + ' bytes')
+        print("\n")
+        facets_recovery: list[FacetRecovery] = self.GenerateSomeSTLTransformation()
+
+        secret_sequence: bytearray = self.EncodeLQ2HQSequence(facets_recovery)
+
+        if len(secret_sequence) > capacity:
+            print('ERROR: Capacity exceeded')
+            return
+
+        encoder = EncoderSTL(self.fn_original_stl) # fake loading
+        encoder.carrier_stl = self.carrier_stl # switching
+        encoder.fn_original_stl = self.fn_original_stl
+
+        encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
+
+
+
+
+
+        # facets_recovery_decoded = self.DecodeLQ2HQSequence(secret_sequence)  # TODO run some tests to compare
+
+        print('    Transformation successful')
+        return
+
+    # def RestoreOriginalHQSTL(self, fn_destination_stl: str):
+    #     print('RestoreSTLFile')
+    #     print('    Carrier ..: ' + self.fn_original_stl)
+    #     print('    Save As ..: ' + fn_destination_stl)
+    #     capacity = self.carrier_stl.FacetsCount() / 8
+    #     print('    Capacity .: ' + str(capacity) + ' bytes')
+    #     print("\n")
+    #     facets_recovery: list[FacetRecovery] = self.GenerateSomeSTLTransformation()
+    #
+    #     secret_sequence: bytearray = self.EncodeLQ2HQSequence(facets_recovery)
+    #
+    #     if len(secret_sequence) > capacity:
+    #         print('ERROR: Capacity exceeded')
+    #         return
+    #
+    #     encoder = EncoderSTL(self.fn_original_stl)  # fake loading
+    #     encoder.carrier_stl = self.carrier_stl  # switching
+    #     encoder.fn_original_stl = self.fn_original_stl
+    #
+    #     encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
+    #
+    #     # facets_recovery_decoded = self.DecodeLQ2HQSequence(secret_sequence)  # TODO run some tests to compare
+    #
+    #     print('    Restoring successful')
+    #     return
 
     #
     # def GetLQ2HQSequence(self, lq2hq: list[Facet]):
@@ -332,15 +395,15 @@ class TranformatorHQ2LQ:
 
     def RestoreVertex(self, sequence: bytearray) -> VertexRecovery:
         i = 0
-        change_x = int.from_bytes(sequence[i:i+1], "big")
+        change_x = int.from_bytes(sequence[i:i + 1], "big")
 
-        sign_x = sequence[i+1:i+2].decode("ascii")
+        sign_x = sequence[i + 1:i + 2].decode("ascii")
 
-        change_y = int.from_bytes(sequence[i+2:i+3], "big")
-        sign_y = sequence[i+3:i+4].decode("ascii")
+        change_y = int.from_bytes(sequence[i + 2:i + 3], "big")
+        sign_y = sequence[i + 3:i + 4].decode("ascii")
 
-        change_z = int.from_bytes(sequence[i+4:i+5], "big")
-        sign_z = sequence[i+5:i+6].decode("ascii")
+        change_z = int.from_bytes(sequence[i + 4:i + 5], "big")
+        sign_z = sequence[i + 5:i + 6].decode("ascii")
 
         new_x_bytes: bytearray = bytearray()
         new_x_bytes.append(sequence[i + 6])
@@ -368,9 +431,9 @@ class TranformatorHQ2LQ:
 
             facet_num: int = int.from_bytes(facet_num_bytes, "big")
 
-            v1_recovery = self.RestoreVertex(lq2hq[i+4:i+14])
-            v2_recovery = self.RestoreVertex(lq2hq[i+14:i+24])
-            v3_recovery = self.RestoreVertex(lq2hq[i+24:i+34])
+            v1_recovery = self.RestoreVertex(lq2hq[i + 4:i + 14])
+            v2_recovery = self.RestoreVertex(lq2hq[i + 14:i + 24])
+            v3_recovery = self.RestoreVertex(lq2hq[i + 24:i + 34])
 
             f = FacetRecovery(facet_num, v1_recovery, v2_recovery, v3_recovery)
             facet_recovery.append(f)
@@ -378,8 +441,47 @@ class TranformatorHQ2LQ:
 
         return facet_recovery
 
-    # def RestoreHQ(self, facets_recovery: list[FacetRecovery], stl_obj: ):
+    def RecoverCoordinate(self, modified_coordinate: float, c_recovery: CoordinateRecovery) -> float:
+        if c_recovery.sign == "+":
+            original_coordinate = modified_coordinate + c_recovery.change
+            return original_coordinate
+        elif c_recovery.sign == "-":
+            original_coordinate = modified_coordinate - c_recovery.change
+            return original_coordinate
+        else:
+            print("Unexpected error: wrong sign")
+            exit()
 
+    def RecoverVertex(self, modified_vertex: Vertex, v_recovery: VertexRecovery) -> Vertex:
+        x: float = self.RecoverCoordinate(modified_vertex.x, v_recovery.x_rec)
+        y: float = self.RecoverCoordinate(modified_vertex.y, v_recovery.y_rec)
+        z: float = self.RecoverCoordinate(modified_vertex.z, v_recovery.z_rec)
+
+        original_vertex: Vertex = Vertex(str(x), str(y), str(z))
+        return original_vertex
+
+    def RecoverFacet(self, modified_facet: Facet, f_recovery: FacetRecovery):
+        v1: Vertex = self.RecoverVertex(modified_facet.vertex_1, f_recovery.v1)
+        v2: Vertex = self.RecoverVertex(modified_facet.vertex_2, f_recovery.v2)
+        v3: Vertex = self.RecoverVertex(modified_facet.vertex_3, f_recovery.v3)
+
+        original_facet: Facet = Facet(v1, v2, v3, modified_facet.normal)
+        return original_facet
+
+    def RestoreHQ(self, facets_recovery: list[FacetRecovery], stl_obj: STLObject) -> STLObject:
+        for facet_recovery in facets_recovery:
+            respective_facet_from_stl = stl_obj.facets[facet_recovery.facet_num]
+            original_order_facet = self.RestoreFacetOrder(respective_facet_from_stl, facet_recovery.v1.new_x)
+
+            original_facet = self.RecoverFacet(original_order_facet, facet_recovery)
+            stl_obj.WriteToSpecificFacet(original_facet, facet_recovery.facet_num)
+
+        return stl_obj
+
+    def SaveRestoredHQSTL(self, fn_destination, stl_obj: STLObject):
+        file = open(fn_destination, "w")
+        file.write(stl_obj.string())
+        file.close()
 
     def SaveTransformedSTL(self, fn_destination):
         file = open(fn_destination, "w")

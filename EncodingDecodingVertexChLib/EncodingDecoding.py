@@ -205,6 +205,7 @@ class EncoderSTL:
         secret_bytes = open(fn_secret, "rb").read()
         secret_size: int = len(secret_bytes)
 
+        carrier_capacity = 0
         if base == base2:
             carrier_capacity = self.carrier_stl.FacetsCount() / 8  # number of bytes
             print('Base2 Capacity: ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
@@ -225,6 +226,36 @@ class EncoderSTL:
             return
 
         print("Failed to encode secret into an STL file, carrier's capacity is not sufficient to encode the secret")
+
+    def EncodeBytesInSTL(self, secret_bytes: bytearray, fn_destination_stl: str, base: str):
+        print('EncodeFileInSTL')
+        print('    Carrier ..: ' + self.fn_original_stl)
+        print('    Save As ..: ' + fn_destination_stl)
+
+        secret_size: int = len(secret_bytes)
+
+        carrier_capacity = 0
+        if base == base2:
+            carrier_capacity = self.carrier_stl.FacetsCount() / 8  # number of bytes
+            print('Base2 Capacity: ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
+        if base == base3:
+            carrier_capacity = self.carrier_stl.FacetsCount() / 6  # number of bytes
+            print('Base3 Capacity: ' + str(carrier_capacity * 6) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
+
+
+        print('    Secret ...: ' + ' (' + str(secret_size) + ' Bytes)')
+        print('    Secret MD5: ' + hashlib.md5(secret_bytes).hexdigest())
+
+        if carrier_capacity >= secret_size + 4:
+            self.EncodeSize(secret_size, base)
+            self.EncodeBytes(secret_bytes, base)
+
+            self.SaveEncodedSTL(fn_destination_stl)
+            print('    Encoding successful')
+            return
+
+        print("Failed to encode secret into an STL file, carrier's capacity is not sufficient to encode the secret")
+
 
     def EncodeBit(self, facet: Facet, bit_value: int):
         if bit_value == 1:
