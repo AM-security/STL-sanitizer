@@ -309,6 +309,14 @@ class EncoderSTL:
             if base == base3:
                 self.EncodeByteBase3(byte)
 
+    def EncodeNumber(self, secret_size: int, base: str):
+        size_in_bytes: bytes = secret_size.to_bytes(4, 'big')
+        for byte in size_in_bytes:  # byte is represented as `int` unicode
+            if base == base2:
+                self.EncodeByte(byte)
+            if base == base3:
+                self.EncodeByteBase3(byte)
+
     def EncodeBytes(self, secret_bytes, base: str):
         for byte in secret_bytes:
             if base == base2:
