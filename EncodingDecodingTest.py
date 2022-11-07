@@ -71,7 +71,7 @@ def EncodeDecodeBitmapTestBase3():
 
 
 EncodeDecodeTextTestBase2()
-# EncodeDecodePictureTestBase2()
+EncodeDecodePictureTestBase2()
 # EncodeDecodeBitmapTestBase2()
 #
 # EncodeDecodeTextTestBase3()

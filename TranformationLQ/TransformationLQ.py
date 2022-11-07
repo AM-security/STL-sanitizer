@@ -2,15 +2,13 @@ import random
 from string import Template
 import typing
 import array
+import os
 import hashlib
 import numpy as np
 import secrets
 import struct
 import math
 import funcy
-from EncodingDecodingVertexChLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2
-
-byte_len_base3 = 6
 
 
 class Vertex:
@@ -148,7 +146,6 @@ class TranformatorHQ2LQ:
 
             picked_old_vertex = self.PickVertexNotInCache()
             new_vertex = self.GenerateTransformationForVertex(picked_old_vertex)
-            print(picked_old_vertex.string())
             self.ApplyTransformationToRespectiveVertices(picked_old_vertex, new_vertex)
 
             self.LQ2HQ_List.append(OldNewPair(picked_old_vertex, new_vertex))
@@ -189,7 +186,7 @@ class TranformatorHQ2LQ:
         for coordinate in old_coordinates:
             sign: int = secrets.choice([0, 1])  # 0 is "-", 1 is "+"
             number = random.choice(range(1, 900))
-            change = number / 10000  # 0.0001 - 0.0009
+            change = number / 100  # 0.0001 - 0.0009
             new_coordinate = self.TransformCoordinate(coordinate, change, sign)
             new_coordinates.append(new_coordinate)
 
@@ -202,13 +199,10 @@ class TranformatorHQ2LQ:
         affected_vertices_in_facet: list[int]
         for f in self.carrier_stl.facets:
             if old_vertex.string() == f.vertex_1.string():
-                print("found vertex 1")
                 f.vertex_1 = new_vertex
             if old_vertex.string() == f.vertex_2.string():
-                print("found vertex 2")
                 f.vertex_2 = new_vertex
             if old_vertex.string() == f.vertex_3.string():
-                print("found vertex 3")
                 f.vertex_3 = new_vertex
         # add to cache
         self.new_vertices_cache.append(new_vertex)
@@ -222,45 +216,41 @@ class TranformatorHQ2LQ:
 
         return new_coordinate
 
-    def TransformSTLFile(self, fn_destination_stl: str):
+    def TransformSTLFile(self, fn_destination_stl: str) -> bytes:
         print('TransformSTLFile')
-        print('    Carrier .....: ' + self.fn_original_stl)
-        print('    Save As .....: ' + fn_destination_stl)
         capacity = self.carrier_stl.FacetsCount() / 8
         print('Vertex Capacity .: ' + str(capacity) + ' bytes')
 
         old_new_pair: list[OldNewPair] = self.GenerateSTLTransormation()
 
-        secret_sequence: bytearray = self.EncodeLQ2HQSequence(old_new_pair)
+        secret_sequence: bytes = self.EncodeLQ2HQSequence(old_new_pair)
 
-        print('Secret length ...: ' + str(len(secret_sequence)))
-        if len(secret_sequence) > capacity:
-            print('ERROR: Capacity exceeded')
-            return
-
-        encoder = EncoderSTL(self.fn_original_stl)  # fake loading
-        encoder.carrier_stl = self.carrier_stl  # switching
-        encoder.fn_original_stl = self.fn_original_stl
-
-        encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
-
+        # print('Secret length ...: ' + str(len(secret_sequence)))
+        # if len(secret_sequence) > capacity:
+        #     print('ERROR: Capacity exceeded')
+        #     return
+        #
+        # encoder = EncoderSTL(self.fn_original_stl)  # fake loading
+        # encoder.carrier_stl = self.carrier_stl  # switching
+        # encoder.fn_original_stl = self.fn_original_stl
+        #
+        # print(secret_sequence.hex())
+        #
+        # encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
+        #
         self.SaveTransformedSTL(fn_destination_stl)
+
         print('    Transformation successful')
-        return
+        return secret_sequence
 
     # This function is supposed to be called in a separate class
-    def RestoreOriginalHQSTL(self, fn_destination_stl: str):
+    def RestoreOriginalHQSTL(self, fn_destination_stl: str, sequence: bytes):
         print('RestoreSTLFile')
         print('    Carrier ..: ' + self.fn_original_stl)
         print('    Save As ..: ' + fn_destination_stl)
         capacity = self.carrier_stl.FacetsCount() / 8
         print('Vertex Capacity .: ' + str(capacity) + ' bytes')
         print("\n")
-        decoder = DecoderSTL(self.fn_original_stl)  # fake loading
-        decoder.carrier_stl = self.carrier_stl  # switching
-        decoder.fn_original_stl = self.fn_original_stl
-
-        sequence = decoder.DecodeBytesFromSTL(base2)
 
         print('Secret length ...: ' + str(len(sequence)))
 
@@ -273,28 +263,40 @@ class TranformatorHQ2LQ:
         print('    Restoring successful')
         return
 
-    def EncodeLQ2HQSequence(self, lq2hq: list[OldNewPair]) -> bytearray:
-        secret: bytearray = bytearray()
+    def EncodeLQ2HQSequence(self, lq2hq: list[OldNewPair]) -> bytes:
+        secret: bytes = bytes()
         secret_length: bytes = (len(lq2hq) * self.single_sequence_size).to_bytes(4, 'big')
         print(len(lq2hq) * self.single_sequence_size)
         # secret += secret_length
         for pair in lq2hq:
-            v_method = 1
-            method = bytearray(v_method.to_bytes(1, 'big'))
+            method: bytearray = bytearray(b'\x05')
             old_x: bytearray = bytearray(struct.pack("d", float(pair.v_old.x)))
             old_y: bytearray = bytearray(struct.pack("d", float(pair.v_old.y)))
             old_z: bytearray = bytearray(struct.pack("d", float(pair.v_old.z)))
+
+            print("old " + pair.v_old.string())
 
             new_x: bytearray = bytearray(struct.pack("d", float(pair.v_new.x)))
             new_y: bytearray = bytearray(struct.pack("d", float(pair.v_new.y)))
             new_z: bytearray = bytearray(struct.pack("d", float(pair.v_new.z)))
 
+            print("new " + pair.v_new.string())
+
             secret += method + old_x + old_y + old_z + new_x + new_y + new_z
+            # secret.append(bytes((5)))
+            # secret.append(old_x[:])
+            # secret.append(old_y[:])
+            # secret.append(old_z[:])
+            #
+            # secret.append(new_x[:])
+            # secret.append(new_y[:])
+            # secret.append(new_z[:])
 
         chunks: list[bytes] = list(funcy.chunks(self.single_sequence_size, secret))
+
         return secret
 
-    def DecodeLQ2HQSequence(self, lq2hq: bytearray) -> list[OldNewPair]:
+    def DecodeLQ2HQSequence(self, lq2hq: bytes) -> list[OldNewPair]:
 
         old_new_pair: list[OldNewPair] = []
 
@@ -304,7 +306,7 @@ class TranformatorHQ2LQ:
                 exit("ERROR: sequence size is wrong. Expected " + str(self.single_sequence_size) + " got " + str(
                     len(ch)))
 
-            method = int.from_bytes(ch[0:1], "big")
+            method = ch[0]
             [old_x] = struct.unpack("d", ch[1:9])
             [old_y] = struct.unpack("d", ch[9:17])
             [old_z] = struct.unpack("d", ch[17:25])
@@ -316,6 +318,9 @@ class TranformatorHQ2LQ:
             old_vertex: Vertex = Vertex(str(old_x), str(old_y), str(old_z))
             new_vertex: Vertex = Vertex(str(new_x), str(new_y), str(new_z))
 
+            print("old " + old_vertex.string())
+            print("new " + new_vertex.string())
+
             old_new_pair.append(OldNewPair(old_vertex, new_vertex))
 
         return old_new_pair
@@ -323,6 +328,15 @@ class TranformatorHQ2LQ:
     def SaveTransformedSTL(self, fn_destination):
         file = open(fn_destination, "w")
         file.write(self.carrier_stl.string())
+        file.flush()
+        os.fsync(file)
+        file.close()
+
+    def SaveBinary(self, fn_destination: str, secret: bytes):
+        file = open(fn_destination, "wb")
+        file.write(secret)
+        file.flush()
+        os.fsync(file)
         file.close()
 
 

@@ -1,5 +1,6 @@
 from string import Template
 import typing
+import os
 import array
 import hashlib
 import numpy as np
@@ -123,7 +124,7 @@ class DecoderSTL:
         self.SaveDecodedSecretInFile(secret_msg, fn_secret_destination)
         print('    Decoding successful')
 
-    def DecodeBytesFromSTL(self, base: str) -> bytearray:
+    def DecodeBytesFromSTL(self, base: str) -> bytes:
         print('DecodeFileFromSTL')
         print('    Carrier ...: ' + self.fn_encoded_stl)
 
@@ -134,7 +135,7 @@ class DecoderSTL:
         print('    Decoded ...: ' + str(len(secret_msg)) + ' Bytes')
         print('    Decoded MD5: ' + hashlib.md5(secret_msg).hexdigest())
         print('    Decoding successful')
-        return bytearray(secret_msg)
+        return secret_msg
 
     def DecodeBit(self, facet) -> int:
         if facet.vertex_1 == Max(facet.vertex_1, Max(facet.vertex_2, facet.vertex_3)):
@@ -240,7 +241,7 @@ class EncoderSTL:
 
         print("Failed to encode secret into an STL file, carrier's capacity is not sufficient to encode the secret")
 
-    def EncodeBytesInSTL(self, secret_bytes: bytearray, fn_destination_stl: str, base: str):
+    def EncodeBytesInSTL(self, secret_bytes: bytes, fn_destination_stl: str, base: str):
         print('EncodeFileInSTL')
         print('    Carrier ..: ' + self.fn_original_stl)
         print('    Save As ..: ' + fn_destination_stl)
@@ -353,13 +354,6 @@ class EncoderSTL:
             if base == base3:
                 self.EncodeByteBase3(byte)
 
-    def EncodeNumber(self, secret_size: int, base: str):
-        size_in_bytes: bytes = secret_size.to_bytes(4, 'big')
-        for byte in size_in_bytes:  # byte is represented as `int` unicode
-            if base == base2:
-                self.EncodeByte(byte)
-            if base == base3:
-                self.EncodeByteBase3(byte)
 
     def EncodeBytes(self, secret_bytes, base: str):
         for byte in secret_bytes:
@@ -396,6 +390,7 @@ def MaxSumComparison(v1: Vertex, v2: Vertex) -> Vertex:
         return v2
 
 
+# IT DOESN'T WORK
 def MaxNumbersComparison(v1: Vertex, v2: Vertex) -> Vertex:
     # compare x coordinates. return Max(v1.x, v2.x)
     if float(v1.x) > float(v2.x):
@@ -420,4 +415,4 @@ def MaxNumbersComparison(v1: Vertex, v2: Vertex) -> Vertex:
 
 # Default function for (v1,v2) comparison. configuration will be supported in the future
 def Max(v1: Vertex, v2: Vertex) -> Vertex:
-    return MaxNumbersComparison(v1, v2)
+    return MaxSumComparison(v1, v2)
