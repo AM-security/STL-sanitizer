@@ -114,7 +114,7 @@ class DecoderSTL:
         file.close()
 
     def DecodeFileFromSTL(self, fn_secret_destination: str):
-        print('DecodeFileFromSTL')
+        print('Decode Bytes Facet Channel')
         print('    Carrier ...: ' + self.fn_encoded_stl)
         print('    Save secret as ...: ' + fn_secret_destination)
 
@@ -127,6 +127,19 @@ class DecoderSTL:
 
         self.SaveDecodedSecretInFile(secret_msg, fn_secret_destination)
         print('    Decoding successful')
+    def DecodeBytesFromSTL(self) -> bytes:
+        print('DecodeFileFromSTL')
+        print('    Carrier ...: ' + self.fn_encoded_stl)
+
+        secret_size = self.DecodeSize()
+        secret_msg = self.DecodeBytes(secret_size)
+        secret_msg = bytes(secret_msg)
+
+        print('    Decoded ...: ' + str(len(secret_msg)) + ' Bytes')
+        print('    Decoded MD5: ' + hashlib.md5(secret_msg).hexdigest())
+        print('    Decoding successful')
+
+        return secret_msg
 
     def DecodeBit(self, pair_facets: PairFacets) -> int:
         if pair_facets.facet_1 == Max(pair_facets.facet_1, pair_facets.facet_2):
@@ -193,6 +206,28 @@ class EncoderSTL:
 
         print("Failed to encode secret into an STL file, carrier's capacity is not sufficient to encode the secret")
 
+    def EncodeBytesInSTL(self, secret_bytes: bytes, fn_destination_stl: str):
+        print('Encode Bytes Facet Channel')
+        print('    Carrier ..: ' + self.fn_original_stl)
+        print('    Save As ..: ' + fn_destination_stl)
+
+        secret_size: int = len(secret_bytes)
+
+        carrier_capacity = self.carrier_stl.FacetsCount() / 2 / 8  # number of bytes
+        print('Capacity:...... ' + str(carrier_capacity * 8) + ' bits (' + str(int(carrier_capacity)) + ' Bytes)')
+
+        print('    Secret ...: ' + ' (' + str(secret_size) + ' Bytes)')
+        print('    Secret MD5: ' + hashlib.md5(secret_bytes).hexdigest())
+        if carrier_capacity >= secret_size + 4:
+            self.EncodeSize(secret_size)
+            self.EncodeBytes(secret_bytes)
+
+            self.SaveEncodedSTL(fn_destination_stl)
+            print('    Encoding successful')
+            return
+
+        print("Failed to encode secret into an STL file, carrier's capacity is not sufficient to encode the secret")
+
     def EncodeBit(self, pair_facets: PairFacets, bit_value: int):
         if bit_value == 1:
             if pair_facets.facet_1 == Max(pair_facets.facet_1, pair_facets.facet_2):
@@ -241,13 +276,13 @@ def LoadSTL(filepath: str) -> STLObject:
 
 # Default function for (f1,f2) comparison. configuration will be supported in the future
 def Max(f1: Facet, f2: Facet) -> Facet:
-    f1v1 = f1.vertex_1.x + f1.vertex_1.y + f1.vertex_1.z
-    f1v2 = f1.vertex_2.x + f1.vertex_2.y + f1.vertex_2.z
-    f1v3 = f1.vertex_3.x + f1.vertex_3.y + f1.vertex_3.z
+    f1v1 = float(f1.vertex_1.x) + float(f1.vertex_1.y) + float(f1.vertex_1.z)
+    f1v2 = float(f1.vertex_2.x) + float(f1.vertex_2.y) + float(f1.vertex_2.z)
+    f1v3 = float(f1.vertex_3.x) + float(f1.vertex_3.y) + float(f1.vertex_3.z)
 
-    f2v1 = f2.vertex_1.x + f2.vertex_1.y + f2.vertex_1.z
-    f2v2 = f2.vertex_2.x + f2.vertex_2.y + f2.vertex_2.z
-    f2v3 = f2.vertex_3.x + f2.vertex_3.y + f2.vertex_3.z
+    f2v1 = float(f2.vertex_1.x) + float(f2.vertex_1.y) + float(f2.vertex_1.z)
+    f2v2 = float(f2.vertex_2.x) + float(f2.vertex_2.y) + float(f2.vertex_2.z)
+    f2v3 = float(f2.vertex_3.x) + float(f2.vertex_3.y) + float(f2.vertex_3.z)
 
     if f1v1 + f1v2 + f1v3 > f2v1 + f2v2 + f2v3:
         return f1

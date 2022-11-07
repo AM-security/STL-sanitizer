@@ -186,8 +186,8 @@ class TranformatorHQ2LQ:
         new_coordinates: list[float] = []
         for coordinate in old_coordinates:
             sign: int = secrets.choice([0, 1])  # 0 is "-", 1 is "+"
-            number = random.choice(range(1, 900))
-            change = number / 100  # 0.0001 - 0.0009
+            number = random.choice(range(1, 9000))
+            change = number / 1000  # 0.0001 - 0.0009
             new_coordinate = self.TransformCoordinate(coordinate, change, sign)
             new_coordinates.append(new_coordinate)
 
@@ -235,7 +235,6 @@ class TranformatorHQ2LQ:
         encoder.carrier_stl = self.carrier_stl  # switching
         encoder.fn_original_stl = self.fn_original_stl
 
-        print(secret_sequence.hex())
 
         encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
 

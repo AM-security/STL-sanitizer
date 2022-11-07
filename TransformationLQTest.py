@@ -4,6 +4,8 @@ import os
 from TranformationLQ.TransformationLQ import TranformatorHQ2LQ
 from EncodingDecodingVertexChLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2
 
+from EncodingDecodingFacetCh.EncodingDecodingFacetCh import EncoderSTL as EncoderFacet, DecoderSTL as DecoderFacet
+
 
 
 def TransformBallAndRestoreBall():
@@ -16,35 +18,36 @@ def TransformBallAndRestoreBall():
     recover.RestoreOriginalHQSTL("tests/TransformationLQTest/deserialization/recovered_HQ_ball.stl")
 
 
-# def TransformBunnyAndRestoreBunny():
-#     transformator = TranformatorHQ2LQ("tests/TransformationLQTest/bunny.stl")
-#     transformator.TransformSTLFile("tests/TransformationLQTest/LQ_bunny.stl")
-#
-#
-#
-#     print("\n")
-#
-#     decoder = DecoderSTL("tests/TransformationLQTest/encoded_LQ_bunny.stl")  # carrier's with secret filepath
-#     sequence2 = decoder.DecodeBytesFromSTL(base2)
-#
-#     recover = TranformatorHQ2LQ("tests/TransformationLQTest/encoded_LQ_bunny.stl")
-#     recover.RestoreOriginalHQSTL("tests/TransformationLQTest/deserialization/recovered_HQ_bunny.stl", sequence2)
+def TransformBunnyAndRestoreBunny():
+    transformator = TranformatorHQ2LQ("tests/TransformationLQTest/bunny.stl")
+    transformator.TransformSTLFile("tests/TransformationLQTest/LQ_bunny.stl")
+
+    print("\n")
+    recover = TranformatorHQ2LQ("tests/TransformationLQTest/LQ_bunny.stl")
+    recover.RestoreOriginalHQSTL("tests/TransformationLQTest/deserialization/recovered_HQ_bunny.stl")
 
 #
-TransformBallAndRestoreBall()
+# TransformBallAndRestoreBall()
 # TransformBunnyAndRestoreBunny()
-# RestoreBall()
-# TransformAndRestoreBall()
-# TransformBunny()
 
 
-# def Tmp():
-#     x = -0.059928507
-#     y = -0.059928507
-#
-#     if math.isclose(x, y):
-#         print("EQUAL")
-#     else:
-#         print("NOT EQUAL")
-#
-# Tmp()
+def FullWatermarkSphere():
+    # INSERT FACET WATERMARK
+    encoderFacet = EncoderFacet("tests/TransformationLQTest/full_test/original_sphere.STL")  # carrier's filepath
+    encoderFacet.EncodeBytesInSTL(bytes("Smith (c)", "utf-8"),"tests/TransformationLQTest/full_test/encoded_sphere.STL")  # path to save the carrier with secret
+
+    decoderFacet = DecoderFacet("tests/TransformationLQTest/full_test/encoded_sphere.STL")  # carrier's with secret filepath
+    watermark = decoderFacet.DecodeBytesFromSTL()  # path to save the decoded secret
+    print(watermark.decode("utf-8"))
+    print("\n")
+
+    transformator = TranformatorHQ2LQ("tests/TransformationLQTest/full_test/encoded_sphere.STL")
+    transformator.TransformSTLFile("tests/TransformationLQTest/full_test/encoded_sphere.STL")
+
+    print("\n")
+
+    recover = TranformatorHQ2LQ("tests/TransformationLQTest/full_test/encoded_sphere.STL")
+    recover.RestoreOriginalHQSTL("tests/TransformationLQTest/full_test/recovered_sphere.STL")
+
+
+FullWatermarkSphere()
