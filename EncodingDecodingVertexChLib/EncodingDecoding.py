@@ -72,8 +72,10 @@ class STLObject:
 
         file.close()
 
-    def GetNextFacet(self) -> Facet:
+    def GetNextFacet(self):
         self.facet_idx += 1
+        if self.facet_idx > len(self.facets) - 1:
+            return None
         current_facet = self.facets[self.facet_idx]
         return current_facet
 
@@ -162,6 +164,14 @@ class DecoderSTL:
             bit_mask = bit_mask >> 1
 
         return byte_value
+    def CheckIfAll1(self)-> bool:
+        while True:
+            facet = self.carrier_stl.GetNextFacet()
+            if facet is None:
+                print("end of vertex channel")
+                return True
+            if self.DecodeBit(facet) != 1:
+                return False
 
     def DecodeByteBase3(self) -> int:
         ternary: str = ""
@@ -362,9 +372,18 @@ class EncoderSTL:
             if base == base3:
                 self.EncodeByteBase3(byte)
 
+    def WriteAll1(self):
+        while True:
+            facet = self.carrier_stl.GetNextFacet()
+            if facet is None:
+                return
+            self.EncodeBit(facet, 1)
+
     def SaveEncodedSTL(self, fn_destination):
         file = open(fn_destination, "w")
         file.write(self.carrier_stl.string())
+        file.flush()
+        os.fsync(file)
         file.close()
 
 
@@ -415,4 +434,4 @@ def MaxNumbersComparison(v1: Vertex, v2: Vertex) -> Vertex:
 
 # Default function for (v1,v2) comparison. configuration will be supported in the future
 def Max(v1: Vertex, v2: Vertex) -> Vertex:
-    return MaxSumComparison(v1, v2)
+    return MaxStringComparison(v1, v2)

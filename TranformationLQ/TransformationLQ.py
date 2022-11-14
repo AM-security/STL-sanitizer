@@ -10,6 +10,7 @@ import struct
 import math
 import funcy
 from EncodingDecodingVertexChLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2
+from EncodingDecodingFacetCh.EncodingDecodingFacetCh import EncoderSTL as FacetEncoderSTL, DecoderSTL as FacetDecoderSTL
 
 
 class Vertex:
@@ -20,7 +21,7 @@ class Vertex:
 
     # Returns string representation of a vertex
     def string(self) -> str:
-        return self.x + " " + self.y + " " + self.z
+        return str(float(self.x)) + " " + str(float(self.y)) + " " + str(float(self.z))
 
 
 class Facet:
@@ -314,6 +315,41 @@ class TranformatorHQ2LQ:
         file.flush()
         os.fsync(file)
         file.close()
+
+    def TransformToCanonical(self, out: str):
+        print('Transforming to canonical form')
+        print('Facet channel')
+        facetEncoder = FacetEncoderSTL(self.fn_original_stl)
+        facetEncoder.WriteAll1()
+        facetEncoder.SaveEncodedSTL(out)
+        print('Finished')
+
+        print('Transforming to canonical form')
+        print('Vertex channel')
+        vertexEncoder = EncoderSTL(out)
+        vertexEncoder.WriteAll1()
+        vertexEncoder.SaveEncodedSTL(out)
+        print('Finished')
+
+        facetDecoder = FacetDecoderSTL(out)
+        if facetDecoder.CheckIfAll1():
+            print("Facet channel is canonical")
+        else:
+            print("Facet channel is not canonical")
+
+        vertexDecoder = DecoderSTL(out)
+        if vertexDecoder.CheckIfAll1():
+            print("Vertex channel is canonical")
+        else:
+            print("Vertex channel is not canonical")
+
+        # print("Changing float representation..")
+        # self.SaveTransformedSTL(out)
+
+
+
+
+
 
 
 def LoadSTL(filepath: str) -> STLObject:

@@ -2,6 +2,7 @@ from string import Template
 import typing
 import array
 import hashlib
+import os
 import numpy as np
 
 
@@ -73,12 +74,18 @@ class STLObject:
 
         file.close()
 
-    def GetNextPairFacet(self) -> PairFacets:
+    def GetNextPairFacet(self):
+
         self.facet_idx += 1
+        if self.facet_idx > len(self.facets) - 1:
+            return None
         current_facet = self.facets[self.facet_idx]
         self.facet_idx += 1
+        if self.facet_idx > len(self.facets) - 1:
+            return None
         current_next_facet = self.facets[self.facet_idx]
         return PairFacets(current_facet, current_next_facet)
+
 
     def WriteToCurrentFacets(self, pair_facets: PairFacets):
         if self.facet_idx == -1:
@@ -158,6 +165,15 @@ class DecoderSTL:
             bit_mask = bit_mask >> 1
 
         return byte_value
+
+    def CheckIfAll1(self) -> bool:
+        while True:
+            pair_facets = self.carrier_stl.GetNextPairFacet()
+            if pair_facets is None:
+                print("end of facet channel")
+                return True
+            if self.DecodeBit(pair_facets) != 1:
+                return False
 
     def DecodeSize(self) -> int:
         size_in_bytes: bytearray = bytearray()
@@ -264,9 +280,19 @@ class EncoderSTL:
         for byte in secret_bytes:
             self.EncodeByte(byte)
 
+    def WriteAll1(self):
+        while True:
+            pair_facets = self.carrier_stl.GetNextPairFacet()
+            if pair_facets is None:
+                return
+            self.EncodeBit(pair_facets, 1)
+
     def SaveEncodedSTL(self, fn_destination):
         file = open(fn_destination, "w")
         file.write(self.carrier_stl.string())
+
+        file.flush()
+        os.fsync(file)
         file.close()
 
 
