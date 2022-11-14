@@ -14,7 +14,7 @@ class Vertex:
 
     # Returns string representation of a vertex
     def string(self) -> str:
-        return self.x + " " + self.y + " " + self.z
+        return str(float(self.x)) + " " + str(float(self.y)) + " " + str(float(self.z))
 
 
 class Facet:

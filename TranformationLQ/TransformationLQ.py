@@ -316,7 +316,7 @@ class TranformatorHQ2LQ:
         os.fsync(file)
         file.close()
 
-    def TransformToCanonical(self, out: str):
+    def TransformToCanonical(self, out: str, original: bool):
         print('Transforming to canonical form')
         print('Facet channel')
         facetEncoder = FacetEncoderSTL(self.fn_original_stl)
@@ -342,10 +342,6 @@ class TranformatorHQ2LQ:
             print("Vertex channel is canonical")
         else:
             print("Vertex channel is not canonical")
-
-        # print("Changing float representation..")
-        # self.SaveTransformedSTL(out)
-
 
 
 

@@ -29,7 +29,7 @@ class Facet:
         self.normal: Vertex = normal
 
     def RotateRight(self):
-        self.vertex_1, self.vertex_2, self.vertex_3 = self.vertex_3, self.vertex_1, self.vertex_2
+        return str(float(self.x)) + " " + str(float(self.y)) + " " + str(float(self.z))
 
     # Returns string representation of a facet
     def string(self) -> str:
