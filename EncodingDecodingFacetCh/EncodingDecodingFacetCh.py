@@ -45,7 +45,11 @@ class PairFacets:
 
 class STLObject:
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, empty: bool):
+        if empty:
+            self.facets: list[Facet] = []
+            self.facet_idx: int = -1
+            return
         self.facets: list[Facet] = []
         self.facet_idx: int = -1
         file = open(filepath, 'r')
@@ -75,7 +79,6 @@ class STLObject:
         file.close()
 
     def GetNextPairFacet(self):
-
         self.facet_idx += 1
         if self.facet_idx > len(self.facets) - 1:
             return None
@@ -84,8 +87,8 @@ class STLObject:
         if self.facet_idx > len(self.facets) - 1:
             return None
         current_next_facet = self.facets[self.facet_idx]
-        return PairFacets(current_facet, current_next_facet)
 
+        return PairFacets(current_facet, current_next_facet)
 
     def WriteToCurrentFacets(self, pair_facets: PairFacets):
         if self.facet_idx == -1:
@@ -110,8 +113,13 @@ class STLObject:
 
 class DecoderSTL:
 
-    def __init__(self, fn_encoded_stl: str):
-        carrier_stl = LoadSTL(fn_encoded_stl)
+    def __init__(self, fn_encoded_stl: str, empty: bool):
+        if empty:
+            carrier_stl: STLObject = LoadSTL("", empty)
+            self.carrier_stl: STLObject = carrier_stl
+            self.fn_original_stl = ""
+            return
+        carrier_stl = LoadSTL(fn_encoded_stl, empty)
         self.carrier_stl = carrier_stl
         self.fn_encoded_stl = fn_encoded_stl
 
@@ -134,6 +142,7 @@ class DecoderSTL:
 
         self.SaveDecodedSecretInFile(secret_msg, fn_secret_destination)
         print('    Decoding successful')
+
     def DecodeBytesFromSTL(self) -> bytes:
         print('DecodeFileFromSTL')
         print('    Carrier ...: ' + self.fn_encoded_stl)
@@ -170,7 +179,6 @@ class DecoderSTL:
         while True:
             pair_facets = self.carrier_stl.GetNextPairFacet()
             if pair_facets is None:
-                print("end of facet channel")
                 return True
             if self.DecodeBit(pair_facets) != 1:
                 return False
@@ -193,8 +201,13 @@ class DecoderSTL:
 
 
 class EncoderSTL:
-    def __init__(self, fn_original_stl: str):
-        carrier_stl: STLObject = LoadSTL(fn_original_stl)
+    def __init__(self, fn_original_stl: str, empty: bool):
+        if empty:
+            carrier_stl: STLObject = LoadSTL(fn_original_stl, empty)
+            self.carrier_stl: STLObject = carrier_stl
+            self.fn_original_stl = ""
+            return
+        carrier_stl: STLObject = LoadSTL(fn_original_stl, empty)
         self.carrier_stl: STLObject = carrier_stl
         self.fn_original_stl = fn_original_stl
 
@@ -283,8 +296,10 @@ class EncoderSTL:
     def WriteAll1(self):
         while True:
             pair_facets = self.carrier_stl.GetNextPairFacet()
+
             if pair_facets is None:
                 return
+
             self.EncodeBit(pair_facets, 1)
 
     def SaveEncodedSTL(self, fn_destination):
@@ -296,24 +311,46 @@ class EncoderSTL:
         file.close()
 
 
-def LoadSTL(filepath: str) -> STLObject:
-    return STLObject(filepath)
+def LoadSTL(filepath: str, empty: bool) -> STLObject:
+    return STLObject(filepath, empty)
 
 
 # Default function for (f1,f2) comparison. configuration will be supported in the future
 def Max(f1: Facet, f2: Facet) -> Facet:
-    f1v1 = float(f1.vertex_1.x) + float(f1.vertex_1.y) + float(f1.vertex_1.z)
-    f1v2 = float(f1.vertex_2.x) + float(f1.vertex_2.y) + float(f1.vertex_2.z)
-    f1v3 = float(f1.vertex_3.x) + float(f1.vertex_3.y) + float(f1.vertex_3.z)
+    # f1v1 = float(f1.vertex_1.x) + float(f1.vertex_1.y) + float(f1.vertex_1.z)
+    # f1v2 = float(f1.vertex_2.x) + float(f1.vertex_2.y) + float(f1.vertex_2.z)
+    # f1v3 = float(f1.vertex_3.x) + float(f1.vertex_3.y) + float(f1.vertex_3.z)
+    #
+    # f2v1 = float(f2.vertex_1.x) + float(f2.vertex_1.y) + float(f2.vertex_1.z)
+    # f2v2 = float(f2.vertex_2.x) + float(f2.vertex_2.y) + float(f2.vertex_2.z)
+    # f2v3 = float(f2.vertex_3.x) + float(f2.vertex_3.y) + float(f2.vertex_3.z)
 
-    f2v1 = float(f2.vertex_1.x) + float(f2.vertex_1.y) + float(f2.vertex_1.z)
-    f2v2 = float(f2.vertex_2.x) + float(f2.vertex_2.y) + float(f2.vertex_2.z)
-    f2v3 = float(f2.vertex_3.x) + float(f2.vertex_3.y) + float(f2.vertex_3.z)
+    # f1sum = (f1v1 + f1v2 + f1v3)
+    # f2sum = (f2v1 + f2v2 + f2v3)
+    #
+    # if (f1v1 + f1v2 + f1v3) > (f2v1 + f2v2 + f2v3):
+    #     return f1
+    # else:
+    #     return f2
 
-    if f1v1 + f1v2 + f1v3 > f2v1 + f2v2 + f2v3:
+    f1v1 = str(float(f1.vertex_1.x)) + str(float(f1.vertex_1.y)) + str(float(f1.vertex_1.z))
+    f1v2 = str(float(f1.vertex_2.x)) + str(float(f1.vertex_2.y)) + str(float(f1.vertex_2.z))
+    f1v3 = str(float(f1.vertex_3.x)) + str(float(f1.vertex_3.y)) + str(float(f1.vertex_3.z))
+
+    f2v1 = str(float(f2.vertex_1.x)) + str(float(f2.vertex_1.y)) + str(float(f2.vertex_1.z))
+    f2v2 = str(float(f2.vertex_2.x)) + str(float(f2.vertex_2.y)) + str(float(f2.vertex_2.z))
+    f2v3 = str(float(f2.vertex_3.x)) + str(float(f2.vertex_3.y)) + str(float(f2.vertex_3.z))
+
+    f1_array = [f1v1, f1v2, f1v3]
+    f1_array.sort()
+
+    f2_array = [f2v1, f2v2, f2v3]
+    f2_array.sort()
+
+    f1_str = ''.join(f1_array)
+    f2_str = ''.join(f2_array)
+
+    if f1_str > f2_str:
         return f1
     else:
         return f2
-
-# if facet1 > facet 2 -- bit 1
-# if facet1 <= facet 2 -- bit2

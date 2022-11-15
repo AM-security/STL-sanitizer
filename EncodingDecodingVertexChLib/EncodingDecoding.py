@@ -43,7 +43,12 @@ class Facet:
 
 class STLObject:
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, empty: bool):
+        if empty:
+            self.facets: list[Facet] = []
+            self.facet_idx: int = -1
+            self.obj_name = ""
+            return
         self.facets: list[Facet] = []
         self.facet_idx: int = -1
         file = open(filepath, 'r')
@@ -101,8 +106,13 @@ class STLObject:
 
 class DecoderSTL:
 
-    def __init__(self, fn_encoded_stl: str):
-        carrier_stl = LoadSTL(fn_encoded_stl)
+    def __init__(self, fn_encoded_stl: str, empty: bool):
+        if empty:
+            carrier_stl: STLObject = LoadSTL("", empty)
+            self.carrier_stl: STLObject = carrier_stl
+            self.fn_original_stl = ""
+            return
+        carrier_stl = LoadSTL(fn_encoded_stl, empty)
         self.carrier_stl = carrier_stl
         self.fn_encoded_stl = fn_encoded_stl
 
@@ -168,7 +178,6 @@ class DecoderSTL:
         while True:
             facet = self.carrier_stl.GetNextFacet()
             if facet is None:
-                print("end of vertex channel")
                 return True
             if self.DecodeBit(facet) != 1:
                 return False
@@ -216,8 +225,12 @@ class DecoderSTL:
 
 
 class EncoderSTL:
-    def __init__(self, fn_original_stl: str):
-        carrier_stl: STLObject = LoadSTL(fn_original_stl)
+    def __init__(self, fn_original_stl: str, empty: bool):
+        if empty:
+            carrier_stl: STLObject = LoadSTL("", empty)
+            self.carrier_stl: STLObject = carrier_stl
+            self.fn_original_stl = ""
+        carrier_stl: STLObject = LoadSTL(fn_original_stl, empty)
         self.carrier_stl: STLObject = carrier_stl
         self.fn_original_stl = fn_original_stl
 
@@ -387,8 +400,8 @@ class EncoderSTL:
         file.close()
 
 
-def LoadSTL(filepath: str) -> STLObject:
-    return STLObject(filepath)
+def LoadSTL(filepath: str, empty: bool) -> STLObject:
+    return STLObject(filepath, empty)
 
 
 # strings concatenation and comparison

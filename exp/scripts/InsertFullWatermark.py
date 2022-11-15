@@ -4,19 +4,21 @@ from TranformationLQ.TransformationLQ import TranformatorHQ2LQ
 from EncodingDecodingFacetCh.EncodingDecodingFacetCh import EncoderSTL as EncoderFacet, DecoderSTL as DecoderFacet
 
 if __name__ == '__main__':
-    if len(sys.argv) > 3:
+    if len(sys.argv) > 4:
         print("wrong number of arguments")
 
     filepath = sys.argv[1]
     watermark = sys.argv[2]
 
+    fileout = sys.argv[3]
+
     # INSERT FACET WATERMARK
-    encoderFacet = EncoderFacet(filepath)
-    encoderFacet.EncodeBytesInSTL(bytes(watermark, "utf-8"),"protected_LQ_sphere.STL")
+    encoderFacet = EncoderFacet(filepath, False)
+    encoderFacet.EncodeBytesInSTL(bytes(watermark, "utf-8"),fileout)
     print("\n")
 
-    transformator = TranformatorHQ2LQ("protected_LQ_sphere.STL")
-    transformator.TransformSTLFile("protected_LQ_sphere.STL")
+    transformator = TranformatorHQ2LQ(fileout)
+    transformator.TransformSTLFile(fileout)
 
     # recover = TranformatorHQ2LQ("protected_LQ_sphere.STL")
     # recover.RestoreOriginalHQSTL("recovered_HQ_sphere.STL")

@@ -10,7 +10,7 @@ import struct
 import math
 import funcy
 from EncodingDecodingVertexChLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2
-from EncodingDecodingFacetCh.EncodingDecodingFacetCh import EncoderSTL as FacetEncoderSTL, DecoderSTL as FacetDecoderSTL
+from EncodingDecodingFacetCh.EncodingDecodingFacetCh import EncoderSTL as FacetEncoderSTL, DecoderSTL as FacetDecoderSTL, PairFacets
 
 
 class Vertex:
@@ -187,7 +187,7 @@ class TranformatorHQ2LQ:
         new_coordinates: list[float] = []
         for coordinate in old_coordinates:
             sign: int = secrets.choice([0, 1])  # 0 is "-", 1 is "+"
-            number = random.choice(range(1, 9000))
+            number = random.choice(range(1, 13000))
             change = number / 1000  # 0.0001 - 0.0009
             new_coordinate = self.TransformCoordinate(coordinate, change, sign)
             new_coordinates.append(new_coordinate)
@@ -232,9 +232,10 @@ class TranformatorHQ2LQ:
             print('ERROR: Capacity exceeded')
             return
 
-        encoder = EncoderSTL(self.fn_original_stl)  # fake loading
+        encoder = EncoderSTL(self.fn_original_stl, True)  # fake loading
         encoder.carrier_stl = self.carrier_stl  # switching
         encoder.fn_original_stl = self.fn_original_stl
+        encoder.carrier_stl.obj_name = self.carrier_stl.obj_name
 
 
         encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
@@ -251,7 +252,7 @@ class TranformatorHQ2LQ:
         print('Vertex Capacity .: ' + str(capacity) + ' bytes')
         print("\n")
 
-        decoder = DecoderSTL(self.fn_original_stl)
+        decoder = DecoderSTL(self.fn_original_stl, False)
 
         sequence = decoder.DecodeBytesFromSTL(base2)
 
@@ -316,28 +317,57 @@ class TranformatorHQ2LQ:
         os.fsync(file)
         file.close()
 
-    def TransformToCanonical(self, out: str, original: bool):
+    def TransformToCanonical(self, out: str, vertexChannelOnly: bool):
+
+
         print('Transforming to canonical form')
         print('Facet channel')
-        facetEncoder = FacetEncoderSTL(self.fn_original_stl)
+        facetEncoder = FacetEncoderSTL("-", True)
+        facetEncoder.carrier_stl.facets = self.carrier_stl.facets
+        facetEncoder.carrier_stl.facet_idx = -1
+        facetEncoder.fn_original_stl = self.fn_original_stl
+        facetEncoder.carrier_stl.obj_name = self.carrier_stl.obj_name
+        print('Number of facets: ' + str(facetEncoder.carrier_stl.FacetsCount()))
         facetEncoder.WriteAll1()
-        facetEncoder.SaveEncodedSTL(out)
         print('Finished')
+
+        if vertexChannelOnly:
+            facetDecoder = FacetDecoderSTL(out, True)
+            facetDecoder.carrier_stl.facets = facetEncoder.carrier_stl.facets
+            facetDecoder.carrier_stl.facet_idx = -1
+
+            if facetDecoder.CheckIfAll1():
+                print("Facet channel is canonical")
+            else:
+                print("Facet channel is not canonical")
+            facetEncoder.SaveEncodedSTL(out)
+            return
 
         print('Transforming to canonical form')
         print('Vertex channel')
-        vertexEncoder = EncoderSTL(out)
+        vertexEncoder = EncoderSTL(out, True)
+        vertexEncoder.carrier_stl.facets = facetEncoder.carrier_stl.facets
+        vertexEncoder.carrier_stl.facet_idx = -1
+
+        vertexEncoder.fn_original_stl = facetEncoder.fn_original_stl
+        vertexEncoder.carrier_stl.obj_name = self.carrier_stl.obj_name
         vertexEncoder.WriteAll1()
         vertexEncoder.SaveEncodedSTL(out)
         print('Finished')
 
-        facetDecoder = FacetDecoderSTL(out)
+        facetDecoder = FacetDecoderSTL(out, True)
+        facetDecoder.carrier_stl.facets = vertexEncoder.carrier_stl.facets
+        facetDecoder.carrier_stl.facet_idx = -1
+
+
         if facetDecoder.CheckIfAll1():
             print("Facet channel is canonical")
         else:
             print("Facet channel is not canonical")
 
-        vertexDecoder = DecoderSTL(out)
+        vertexDecoder = DecoderSTL(out, True)
+        vertexDecoder.carrier_stl.facets = vertexEncoder.carrier_stl.facets
+        vertexDecoder.carrier_stl.facet_idx = -1
         if vertexDecoder.CheckIfAll1():
             print("Vertex channel is canonical")
         else:

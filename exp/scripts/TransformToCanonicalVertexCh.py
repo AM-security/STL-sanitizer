@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
 
     transformer = TranformatorHQ2LQ(filepath)
-    transformer.TransformToCanonical(outfile, False)
+    transformer.TransformToCanonical(outfile, True)
 
 
 

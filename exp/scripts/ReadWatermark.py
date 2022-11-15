@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
     filepath = sys.argv[1]
 
-    decoderFacet = DecoderFacet(filepath)  # carrier's with secret filepath
+    decoderFacet = DecoderFacet(filepath, False)  # carrier's with secret filepath
     watermark = decoderFacet.DecodeBytesFromSTL()  # path to save the decoded secret
     print("\n")
     print(watermark.decode("utf-8"))
