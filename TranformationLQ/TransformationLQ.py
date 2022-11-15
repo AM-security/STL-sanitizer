@@ -187,7 +187,7 @@ class TranformatorHQ2LQ:
         new_coordinates: list[float] = []
         for coordinate in old_coordinates:
             sign: int = secrets.choice([0, 1])  # 0 is "-", 1 is "+"
-            number = random.choice(range(1, 13000))
+            number = random.choice(range(1, 1000))
             change = number / 1000  # 0.0001 - 0.0009
             new_coordinate = self.TransformCoordinate(coordinate, change, sign)
             new_coordinates.append(new_coordinate)
@@ -318,6 +318,27 @@ class TranformatorHQ2LQ:
         file.close()
 
     def TransformToCanonical(self, out: str, vertexChannelOnly: bool):
+        if vertexChannelOnly:
+            print('Transforming to canonical form')
+            print('Vertex channel')
+            vertexEncoder = EncoderSTL(out, True)
+            vertexEncoder.carrier_stl.facets = self.carrier_stl.facets
+            vertexEncoder.carrier_stl.facet_idx = -1
+
+            vertexEncoder.fn_original_stl = self.fn_original_stl
+            vertexEncoder.carrier_stl.obj_name = self.carrier_stl.obj_name
+            vertexEncoder.WriteAll1()
+            vertexEncoder.SaveEncodedSTL(out)
+            print('Finished')
+
+            vertexDecoder = DecoderSTL(out, True)
+            vertexDecoder.carrier_stl.facets = vertexEncoder.carrier_stl.facets
+            vertexDecoder.carrier_stl.facet_idx = -1
+            if vertexDecoder.CheckIfAll1():
+                print("Vertex channel is canonical")
+            else:
+                print("Vertex channel is not canonical")
+            return
 
 
         print('Transforming to canonical form')
@@ -330,18 +351,6 @@ class TranformatorHQ2LQ:
         print('Number of facets: ' + str(facetEncoder.carrier_stl.FacetsCount()))
         facetEncoder.WriteAll1()
         print('Finished')
-
-        if vertexChannelOnly:
-            facetDecoder = FacetDecoderSTL(out, True)
-            facetDecoder.carrier_stl.facets = facetEncoder.carrier_stl.facets
-            facetDecoder.carrier_stl.facet_idx = -1
-
-            if facetDecoder.CheckIfAll1():
-                print("Facet channel is canonical")
-            else:
-                print("Facet channel is not canonical")
-            facetEncoder.SaveEncodedSTL(out)
-            return
 
         print('Transforming to canonical form')
         print('Vertex channel')
