@@ -14,14 +14,8 @@ if __name__ == '__main__':
     transformator = TranformatorHQ2LQ(filepath)
     transformator.TransformSTLFile(fileout)
 
-    # recover = TranformatorHQ2LQ("protected_LQ_sphere.STL")
-    # recover.RestoreOriginalHQSTL("recovered_HQ_sphere.STL")
     print("\n")
 
-
-    # decoderFacet = DecoderFacet("protected_LQ_sphere.STL")  # carrier's with secret filepath
-    # watermark_recpvered = decoderFacet.DecodeBytesFromSTL()  # path to save the decoded secret
-    # print(watermark_recpvered.decode("utf-8"))
 
 
 
