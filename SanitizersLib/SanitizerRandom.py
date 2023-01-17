@@ -1,4 +1,4 @@
-from EncodingDecodingLib.EncodingDecoding import EncoderSTL, STLObject, LoadSTL, Facet
+from VertexChEncoderLib.VertexChEncoderLib import EncoderSTL, STLObject, LoadSTL, Facet
 import secrets
 
 

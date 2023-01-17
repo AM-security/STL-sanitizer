@@ -317,22 +317,6 @@ def LoadSTL(filepath: str, empty: bool) -> STLObject:
 
 # Default function for (f1,f2) comparison. configuration will be supported in the future
 def Max(f1: Facet, f2: Facet) -> Facet:
-    # f1v1 = float(f1.vertex_1.x) + float(f1.vertex_1.y) + float(f1.vertex_1.z)
-    # f1v2 = float(f1.vertex_2.x) + float(f1.vertex_2.y) + float(f1.vertex_2.z)
-    # f1v3 = float(f1.vertex_3.x) + float(f1.vertex_3.y) + float(f1.vertex_3.z)
-    #
-    # f2v1 = float(f2.vertex_1.x) + float(f2.vertex_1.y) + float(f2.vertex_1.z)
-    # f2v2 = float(f2.vertex_2.x) + float(f2.vertex_2.y) + float(f2.vertex_2.z)
-    # f2v3 = float(f2.vertex_3.x) + float(f2.vertex_3.y) + float(f2.vertex_3.z)
-
-    # f1sum = (f1v1 + f1v2 + f1v3)
-    # f2sum = (f2v1 + f2v2 + f2v3)
-    #
-    # if (f1v1 + f1v2 + f1v3) > (f2v1 + f2v2 + f2v3):
-    #     return f1
-    # else:
-    #     return f2
-
     f1v1 = str(float(f1.vertex_1.x)) + str(float(f1.vertex_1.y)) + str(float(f1.vertex_1.z))
     f1v2 = str(float(f1.vertex_2.x)) + str(float(f1.vertex_2.y)) + str(float(f1.vertex_2.z))
     f1v3 = str(float(f1.vertex_3.x)) + str(float(f1.vertex_3.y)) + str(float(f1.vertex_3.z))

@@ -5,12 +5,13 @@ import array
 import os
 import hashlib
 import numpy as np
+from collections import OrderedDict
 import secrets
 import struct
 import math
 import funcy
-from EncodingDecodingVertexChLib.EncodingDecoding import EncoderSTL, DecoderSTL, base2
-from EncodingDecodingFacetCh.EncodingDecodingFacetCh import EncoderSTL as FacetEncoderSTL, DecoderSTL as FacetDecoderSTL, PairFacets
+from VertexChEncoderLib.VertexChEncoderLib import EncoderSTL, DecoderSTL, base2
+from FacetChEncoderLib.FacetChEncoderLib import EncoderSTL as FacetEncoderSTL, DecoderSTL as FacetDecoderSTL, PairFacets
 
 
 class Vertex:
@@ -95,6 +96,19 @@ class STLObject:
     def FacetsCount(self) -> int:
         return len(self.facets)
 
+    def UniqueVerticesCount(self) -> int:
+        overall_vertices: list[str] = []
+
+
+
+        for f in self.facets:
+            overall_vertices.append(f.vertex_1.string())
+            overall_vertices.append(f.vertex_2.string())
+            overall_vertices.append(f.vertex_3.string())
+
+        result = list(OrderedDict.fromkeys(overall_vertices))
+        return len(result)
+
     def CurrentIdx(self) -> int:
         return self.facet_idx
 
@@ -140,14 +154,19 @@ class TranformatorHQ2LQ:
         self.new_vertices_cache: list[Vertex] = []
         self.single_sequence_size = 49
 
-    def GenerateSTLTransormation(self) -> list[OldNewPair]:
+        self.affected_facets_num = 0
+        self.affected_vertices_num = 0
+        self.affected_unique_vertices_num = 0
+
+
+    def GenerateSTLTransormation(self, start_range: int, end_range: int, divide_by: int) -> list[OldNewPair]:
         capacity = self.carrier_stl.FacetsCount() / 8
         # capacity = capacity - 4  # the first thing we do is to ensure space for the size of the secret
 
         while capacity > self.single_sequence_size + 4:  # single sequence size + the size of the secret
 
             picked_old_vertex = self.PickVertexNotInCache()
-            new_vertex = self.GenerateTransformationForVertex(picked_old_vertex)
+            new_vertex = self.GenerateTransformationForVertex(picked_old_vertex, start_range, end_range, divide_by)
             self.ApplyTransformationToRespectiveVertices(picked_old_vertex, new_vertex)
 
             self.LQ2HQ_List.append(OldNewPair(picked_old_vertex, new_vertex))
@@ -155,6 +174,7 @@ class TranformatorHQ2LQ:
             capacity -= self.single_sequence_size
 
         return self.LQ2HQ_List
+
 
     def PickVertexNotInCache(self) -> Vertex:
         picked_vertex = self.PickRandomVertexFromCarrier()
@@ -181,14 +201,14 @@ class TranformatorHQ2LQ:
         if random_vertex == 3:
             return self.carrier_stl.facets[random_facet_idx].vertex_3
 
-    def GenerateTransformationForVertex(self, v: Vertex) -> Vertex:
+    def GenerateTransformationForVertex(self, v: Vertex, start_range: int, end_range: int, divide_by: int) -> Vertex:
 
         old_coordinates: list[float] = [float(v.x), float(v.y), float(v.z)]
         new_coordinates: list[float] = []
         for coordinate in old_coordinates:
             sign: int = secrets.choice([0, 1])  # 0 is "-", 1 is "+"
-            number = random.choice(range(1, 1000))
-            change = number / 1000  # 0.0001 - 0.0009
+            number = random.choice(range(start_range, end_range))
+            change = number / divide_by  # 0.0001 - 0.0009
             new_coordinate = self.TransformCoordinate(coordinate, change, sign)
             new_coordinates.append(new_coordinate)
 
@@ -202,10 +222,16 @@ class TranformatorHQ2LQ:
         for f in self.carrier_stl.facets:
             if old_vertex.string() == f.vertex_1.string():
                 f.vertex_1 = new_vertex
-            if old_vertex.string() == f.vertex_2.string():
+                self.affected_vertices_num += 1
+                self.affected_facets_num += 1
+            elif old_vertex.string() == f.vertex_2.string():
                 f.vertex_2 = new_vertex
-            if old_vertex.string() == f.vertex_3.string():
+                self.affected_vertices_num += 1
+                self.affected_facets_num += 1
+            elif old_vertex.string() == f.vertex_3.string():
                 f.vertex_3 = new_vertex
+                self.affected_vertices_num += 1
+                self.affected_facets_num += 1
         # add to cache
         self.new_vertices_cache.append(new_vertex)
 
@@ -218,12 +244,12 @@ class TranformatorHQ2LQ:
 
         return new_coordinate
 
-    def TransformSTLFile(self, fn_destination_stl: str):
+    def TransformSTLFile(self, fn_destination_stl: str, start_range: int, end_range: int, divide_by: int):
         print('TransformSTLFile')
         capacity = self.carrier_stl.FacetsCount() / 8
         print('Vertex Capacity .: ' + str(capacity) + ' bytes')
 
-        old_new_pair: list[OldNewPair] = self.GenerateSTLTransormation()
+        old_new_pair: list[OldNewPair] = self.GenerateSTLTransormation(start_range, end_range, divide_by)
 
         secret_sequence: bytes = self.EncodeLQ2HQSequence(old_new_pair)
 
@@ -241,6 +267,13 @@ class TranformatorHQ2LQ:
         encoder.EncodeBytesInSTL(secret_sequence, fn_destination_stl, base2)
 
         print('    Transformation successful')
+
+        print('    The model has ' + str(self.carrier_stl.FacetsCount()) + ' facets')
+        print('    The model has ' + str(self.carrier_stl.UniqueVerticesCount()) + ' unique vertices')
+        print('    ' + str(self.affected_facets_num) + ' facets have been affected')
+        print('    ' + str(self.affected_vertices_num) + ' vertices have been affected')
+        print('    ' + str(len(old_new_pair)) + ' unique vertices have been affected')
+
         return
 
     # This function is supposed to be called in a separate class
@@ -381,8 +414,6 @@ class TranformatorHQ2LQ:
             print("Vertex channel is canonical")
         else:
             print("Vertex channel is not canonical")
-
-
 
 
 
