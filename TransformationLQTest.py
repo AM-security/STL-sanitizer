@@ -42,7 +42,7 @@ def FullWatermarkSphere():
     print("\n")
 
     transformator = TranformatorHQ2LQ("tests/TransformationLQTest/full_test/encoded_sphere.STL")
-    transformator.TransformSTLFile("tests/TransformationLQTest/full_test/encoded_sphere.STL")
+    transformator.TransformSTLFile("tests/TransformationLQTest/full_test/encoded_sphere.STL", 1, 1000, 1000)
 
     print("\n")
 
