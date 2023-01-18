@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "STL-sanitizer"
+version = "0.0.1"
+description = "A library that allows to sanitize basic STL covert channels"
+authors = ["Aleksandr Dolgavin"]
+
+#dependencies = [
+#    "stlcovertchannels @ git+https://github.com/AM-security/STL-channels-encoder.git",
+#]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "sanitizer_random"
+]

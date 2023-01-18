@@ -1,11 +1,10 @@
-from VertexChEncoderLib.VertexChEncoderLib import EncoderSTL, STLObject, LoadSTL, Facet
 import secrets
-
+from vertex_ch_encoder.lib.vertex_ch_encoder import EncoderSTL, DecoderSTL, base2, base3, STLObject, LoadSTL, Facet
 
 #  In this sanitizer we will not sanitize the first 4 bytes for the sake of experiment
 class SanitizerRandom:
     def __init__(self, fn_encoded_stl):
-        carrier_stl: STLObject = LoadSTL(fn_encoded_stl)
+        carrier_stl: STLObject = LoadSTL(fn_encoded_stl, False)
         self.carrier_stl: STLObject = carrier_stl
         self.fn_carrier_stl = fn_encoded_stl
 
