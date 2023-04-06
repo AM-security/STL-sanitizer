@@ -13,3 +13,4 @@
 
 ## Tests:
     cd sanitizer_random/tests && pytest -q sanitizer_random_test.py
+    cd sanitizer_random/tests && pytest -q attack_on_sanitizer.py
