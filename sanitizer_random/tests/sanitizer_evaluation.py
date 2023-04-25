@@ -38,6 +38,25 @@ def SecretBytesListToBinary(b: list[int]) -> str:
     return res
 
 
+def SecretBytesListToBinaryNoPrint(b: list[int]) -> str:
+    bit_mask: int = 0x80
+    res = ""
+    for byte_value in b:
+        # res += ''.join('{:08b}'.format(b) for b in str_byte.encode('utf8'))
+        # print(''.join('{:08b}'.format(b) for b in str_byte.encode('utf8')))
+        byte_res = ""
+        for i in range(0, 8):
+            if byte_value & bit_mask:
+                byte_res += "1"
+            else:
+                byte_res += "0"
+            bit_mask = bit_mask >> 1
+        res += byte_res
+        print(byte_res)
+        bit_mask = 0x80
+    return res
+
+
 def SecretBytesToTernary(b: list[int]):
     res = ""
     for byte_value in b:
@@ -207,3 +226,129 @@ def test_sanitize_facet_ch_random_text_base_2():
 
 
     assert secret_before != secret_after
+
+
+
+
+# Random text vertex channel sanitizer jebsmmsfzvvalkeiqwgctgsopjhyjnyjhfksznqrzarktcwxtudolvujizaylsef
+def test_sanitize_vertex_ch_random_text_base_2():
+    # Decoding before sanitization
+    decoder_before = DecoderSTL("test_objects/vertex_channel/base2/text/encoded_sphere.STL",
+                                False)  # carrier's with secret filepath
+    secret_before = decoder_before.DecodeBytesFromSTL(base2)  # path to save the decoded carrier
+    secret_before_binary_str = SecretBytesListToBinary(secret_before)
+
+    print("Secret before:")
+    print(secret_before)
+
+    sanitizer = SanitizerRandom("test_objects/vertex_channel/base2/random_text/encoded_bunny.STL")  # carrier's filepath
+    sanitizer.SanitizeVertexCh(SECRET_SIZE_BITS_BASE_2)
+    sanitizer.SaveSanitizedFile(
+        "test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL")  # filepath destination for sanitized stl file
+
+    # Decoding after sanitization
+    decoder_after = DecoderSTL("test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL",
+                               False)  # carrier's with secret filepath
+    secret_after = decoder_after.DecodeBytesFromSTL(base2)  # path to save the decoded carrier
+
+    # Decoding after sanitization
+    decoder_after_1 = DecoderSTL("test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL", False)  # carrier's with secret filepath
+    decoder_after_1.DecodeFileFromSTL("test_objects/vertex_channel/base2/random_text/secret_after.txt", base2)  # path to save the decoded carrier
+
+    print("Secret after:")
+    print(secret_after)
+
+    WriteUnicodeToFile(secret_after, "test_objects/vertex_channel/base2/random_text/secret_after.txt")
+
+    secret_after_binary_str = SecretBytesListToBinary(secret_after)
+
+    print("Longest run:")
+    print(LongestSubstream(secret_before_binary_str, secret_after_binary_str))
+    assert secret_before != secret_after
+
+
+
+###################################
+
+# Random text vertex channel sanitizer jebsmmsfzvvalkeiqwgctgsopjhyjnyjhfksznqrzarktcwxtudolvujizaylsef
+def experiment_random_text_base_2_vertex_how_many_bits_survive() -> str:
+    # Decoding before sanitization
+
+
+    sanitizer = SanitizerRandom("test_objects/vertex_channel/base2/random_text/encoded_bunny.STL")  # carrier's filepath
+    sanitizer.SanitizeVertexCh(SECRET_SIZE_BITS_BASE_2)
+    sanitizer.SaveSanitizedFile(
+        "test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL")  # filepath destination for sanitized stl file
+
+    # Decoding after sanitization
+    decoder_after = DecoderSTL("test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL",
+                               False)  # carrier's with secret filepath
+    secret_after = decoder_after.DecodeBytesFromSTL(base2)  # path to save the decoded carrier
+
+    # Decoding after sanitization
+    decoder_after_1 = DecoderSTL("test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL", False)  # carrier's with secret filepath
+    decoder_after_1.DecodeFileFromSTL("test_objects/vertex_channel/base2/random_text/secret_after.txt", base2)  # path to save the decoded carrier
+
+    print("Secret after:")
+    print(secret_after)
+
+    WriteUnicodeToFile(secret_after, "test_objects/vertex_channel/base2/random_text/secret_after.txt")
+
+    secret_after_binary_str = SecretBytesListToBinaryNoPrint(secret_after)
+
+
+    return secret_after_binary_str
+
+
+def test_run_experiment_ten_times_count_prob_of_each_bit_to_survice():
+    decoder_before = DecoderSTL("test_objects/vertex_channel/base2/random_text/encoded_bunny.STL",
+                                False)  # carrier's with secret filepath
+    secret_before = decoder_before.DecodeBytesFromSTL(base2)  # path to save the decoded carrier
+    secret_before_binary_str = SecretBytesListToBinaryNoPrint(secret_before)
+
+    number_of_experiments = 30
+    idx = 0
+
+    secrets_after = []
+    while idx < number_of_experiments:
+        secret_after = experiment_random_text_base_2_vertex_how_many_bits_survive()
+        print("experiment number " + str(idx))
+
+        secrets_after.append(secret_after)
+        idx += 1
+
+    bit_pos_bit_states = {}
+    for secret_after in secrets_after:
+        for bit_pos, bit in enumerate(secret_after):
+
+            new_sequence = ""
+            if bool(bit_pos_bit_states):
+                if bit_pos in bit_pos_bit_states:
+                    prev_seq_of_bit_states = bit_pos_bit_states[bit_pos]
+                    new_sequence += prev_seq_of_bit_states
+            new_sequence += str(bit)
+            bit_pos_bit_states[bit_pos] = new_sequence
+
+
+    print("Secret before:")
+    lenn = str(len(secret_before_binary_str))
+    print(lenn)
+    bit_pos_survival_prob = {}
+    for bit_pos in bit_pos_bit_states:
+        original_bit_value = secret_before_binary_str[bit_pos]
+
+        number_of_ones = bit_pos_bit_states[bit_pos].count('1')
+        number_of_zeros = bit_pos_bit_states[bit_pos].count('0')
+
+        prob_of_staying_the_same = 0
+        if original_bit_value == "1":
+            prob_of_staying_the_same = (100 * number_of_ones) / len(bit_pos_bit_states[bit_pos])
+        else:
+            prob_of_staying_the_same = (100 * number_of_zeros) / len(bit_pos_bit_states[bit_pos])
+
+        bit_pos_survival_prob[bit_pos] = prob_of_staying_the_same
+
+
+    for key in bit_pos_survival_prob:
+        print(str(key) +": " + str(bit_pos_survival_prob[key]) + " %")
+    # print(secret_before)
