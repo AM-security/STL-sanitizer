@@ -1,3 +1,5 @@
+import statistics
+
 import pytest
 from sanitizer_random.lib.sanitizer_random import SanitizerRandom
 from vertex_ch_encoder.lib.vertex_ch_encoder import EncoderSTL, DecoderSTL, base2, base3
@@ -306,14 +308,14 @@ def test_run_experiment_ten_times_count_prob_of_each_bit_to_survice():
     secret_before = decoder_before.DecodeBytesFromSTL(base2)  # path to save the decoded carrier
     secret_before_binary_str = SecretBytesListToBinaryNoPrint(secret_before)
 
-    number_of_experiments = 30
+    number_of_experiments = 10
     idx = 0
 
     secrets_after = []
     while idx < number_of_experiments:
         secret_after = experiment_random_text_base_2_vertex_how_many_bits_survive()
         print("experiment number " + str(idx))
-
+        print(secret_after)
         secrets_after.append(secret_after)
         idx += 1
 
@@ -348,7 +350,10 @@ def test_run_experiment_ten_times_count_prob_of_each_bit_to_survice():
 
         bit_pos_survival_prob[bit_pos] = prob_of_staying_the_same
 
-
+    array_of_prob = []
     for key in bit_pos_survival_prob:
+        array_of_prob.append(bit_pos_survival_prob[key])
         print(str(key) +": " + str(bit_pos_survival_prob[key]) + " %")
+
+    print(statistics.median(array_of_prob))
     # print(secret_before)
