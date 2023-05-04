@@ -1,0 +1,303 @@
+<style type="text/css">
+.tg  {border-collapse:collapse;border-color:#ccc;border-spacing:0;}
+.tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#f0f0f0;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-855q{background-color:#ffffff;border-color:#c0c0c0;text-align:left;vertical-align:top}
+.tg .tg-wo29{border-color:#c0c0c0;text-align:left;vertical-align:top}
+.tg .tg-u4qj{background-color:#efefef;border-color:#c0c0c0;text-align:left;vertical-align:top}
+.tg .tg-wz8s{background-color:#ffffff;border-color:#c0c0c0;text-align:left;vertical-align:bottom}
+</style>
+<table class="tg">
+  <caption>Table: Sanitizing a random sequence encoded in a vertex channel of an STL file</caption>
+<thead>
+  <tr>
+    <th class="tg-855q"></th>
+    <th class="tg-wo29">Bit 1</th>
+    <th class="tg-wo29">Bit 2</th>
+    <th class="tg-wo29">Bit 3</th>
+    <th class="tg-wo29">Bit 4</th>
+    <th class="tg-wo29">Bit 5</th>
+    <th class="tg-wo29">Bit 6</th>
+    <th class="tg-wo29">Bit 7</th>
+    <th class="tg-wo29">Bit 8</th>
+    <th class="tg-wo29">Bit 9</th>
+    <th class="tg-wo29">Bit 10</th>
+    <th class="tg-wo29">Bit 11</th>
+    <th class="tg-wo29">Bit 12</th>
+    <th class="tg-wo29">Bit 13</th>
+    <th class="tg-wo29">Bit 14</th>
+    <th class="tg-wo29">Bit 15</th>
+    <th class="tg-wo29">Bit 16</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-u4qj">Original Sequence</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 2</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 3</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 4</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 5</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 6</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 7</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 8</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 9</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Run # 10</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">0</td>
+    <td class="tg-wo29">1</td>
+    <td class="tg-wo29">0</td>
+  </tr>
+  <tr>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+    <td class="tg-wz8s"></td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Probability estimation of "bit survival"</td>
+    <td class="tg-wo29">60 %</td>
+    <td class="tg-wo29">40 %</td>
+    <td class="tg-wo29">70 %</td>
+    <td class="tg-wo29">70 %</td>
+    <td class="tg-wo29">30 %</td>
+    <td class="tg-wo29">60 %</td>
+    <td class="tg-wo29">10 %</td>
+    <td class="tg-wo29">60 %</td>
+    <td class="tg-wo29">50 %</td>
+    <td class="tg-wo29">30 %</td>
+    <td class="tg-wo29">30 %</td>
+    <td class="tg-wo29">60 %</td>
+    <td class="tg-wo29">60 %</td>
+    <td class="tg-wo29">30 %</td>
+    <td class="tg-wo29">80 %</td>
+    <td class="tg-wo29">40 %</td>
+  </tr>
+  <tr>
+    <td class="tg-u4qj">Median</td>
+    <td class="tg-wo29">55</td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+    <td class="tg-wo29"></td>
+  </tr>
+</tbody>
+</table>
