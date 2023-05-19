@@ -1,10 +1,13 @@
 import statistics
 
-import pytest
+import pandas as pd
+from typing import List
 from sanitizer_random.lib.sanitizer_random import SanitizerRandom
 from vertex_ch_encoder.lib.vertex_ch_encoder import EncoderSTL, DecoderSTL, base2, base3
 import numpy as np
+import matplotlib.pyplot as plt
 from facet_ch_encoder.lib.facet_ch_encoder import EncoderSTL as FacetEncoderSTL, DecoderSTL as FacetDecoderSTL
+import csv
 
 byte_len_base3 = 6
 
@@ -273,28 +276,19 @@ def test_sanitize_vertex_ch_random_text_base_2():
 ###################################
 
 # Random text vertex channel sanitizer jebsmmsfzvvalkeiqwgctgsopjhyjnyjhfksznqrzarktcwxtudolvujizaylsef
-def experiment_random_text_base_2_vertex_how_many_bits_survive() -> str:
+def sanitize_and_return_new_sequence_vertex_ch(encoded_stl:str, sanitized_stl_save:str) -> str:
     # Decoding before sanitization
 
 
-    sanitizer = SanitizerRandom("test_objects/vertex_channel/base2/random_text/encoded_bunny.STL")  # carrier's filepath
+    sanitizer = SanitizerRandom(encoded_stl)  # carrier's filepath
     sanitizer.SanitizeVertexCh(SECRET_SIZE_BITS_BASE_2)
     sanitizer.SaveSanitizedFile(
-        "test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL")  # filepath destination for sanitized stl file
+        sanitized_stl_save)  # filepath destination for sanitized stl file
 
     # Decoding after sanitization
-    decoder_after = DecoderSTL("test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL",
+    decoder_after = DecoderSTL(sanitized_stl_save,
                                False)  # carrier's with secret filepath
     secret_after = decoder_after.DecodeBytesFromSTL(base2)  # path to save the decoded carrier
-
-    # Decoding after sanitization
-    decoder_after_1 = DecoderSTL("test_objects/vertex_channel/base2/random_text/sanitized_bunny.STL", False)  # carrier's with secret filepath
-    decoder_after_1.DecodeFileFromSTL("test_objects/vertex_channel/base2/random_text/secret_after.txt", base2)  # path to save the decoded carrier
-
-    print("Secret after:")
-    print(secret_after)
-
-    WriteUnicodeToFile(secret_after, "test_objects/vertex_channel/base2/random_text/secret_after.txt")
 
     secret_after_binary_str = SecretBytesListToBinaryNoPrint(secret_after)
 
@@ -302,22 +296,128 @@ def experiment_random_text_base_2_vertex_how_many_bits_survive() -> str:
     return secret_after_binary_str
 
 
-def test_run_experiment_ten_times_count_prob_of_each_bit_to_survice():
-    decoder_before = DecoderSTL("test_objects/vertex_channel/base2/random_text/encoded_bunny.STL",
+def calculate_prob_and_variance_of_all_bits(secret_before: str, secrets_after: List[str]) -> List[int]:
+    array_of_probabilities_of_survival_all_bits = []
+    for secret_after in secrets_after:
+        a = len(secret_before)
+        b = len(secret_after)
+        counter_matching = 0
+        for i in range(len(secret_after)):
+            if secret_after[i] == secret_before[i]:
+                counter_matching += 1
+        prob = int((100 * counter_matching) / len(secret_after))
+        array_of_probabilities_of_survival_all_bits.append(prob)
+    return array_of_probabilities_of_survival_all_bits
+
+# n - number of experiments
+def build_gistogram(array_of_probabilities_of_survival_all_bits: List[int]):
+    # df = pd.DataFrame({'Survival of all bits': array_of_probabilities_of_survival_all_bits},
+    # )
+    probabilitites = pd.Series(array_of_probabilities_of_survival_all_bits)
+    ax = probabilitites.hist(grid=True,bins=100, rwidth=0.9,color='#607c8e')
+    plt.title('Probabilities of survival for 100 experiments')
+    plt.ylabel('Counts')
+    plt.xlabel('Probability of survival for all bits')
+    plt.grid(axis='y', alpha=0.75)
+    fig = ax.get_figure()
+    fig.savefig('../experiment/original/histogram.png')
+    #select unique values
+    # unique_list = []
+    # # traverse for all elements
+    # for x in array_of_probabilities_of_survival_all_bits:
+    #     # check if exists in unique_list or not
+    #     if x not in unique_list:
+    #         unique_list.append(x)
+    #
+    #
+    # dict_prob_how_many_times_repeated = {}
+    #
+    # for i, in range(len(unique_list)):
+    #     counter = 0
+    #     for prob in array_of_probabilities_of_survival_all_bits:
+    #         if prob == unique_list[i]:
+    #             counter += 1
+    #     dict_prob_how_many_times_repeated[unique_list[i]] = counter
+
+def build_csv_file(secret_before: str, secrets_after: List[str],
+                   array_of_probabilities_of_survival_all_bits: List[int],
+                   array_of_probabilities_of_survival_individual_bits: List[int],
+                   array_of_variances_of_individual_bits: List[int]):
+    # field names
+    fields_bits = []
+    for i in range(len(secret_before)):
+        fields_bits.append("bit_" + str(i+1))
+    fields = ['-', 'Survival of all bits for each sequence, %']
+    fields += fields_bits
+
+    rows = []
+    row_zero = {'-': 'Original sequence', 'Survival of all bits for each sequence, %': '    '}
+    idx = 0
+    for character in [*secret_before]:
+        row_zero['bit_' +str(idx+1)] = character
+        idx += 1
+    # row_zero = ['Run #', 'Original sequence'] + [*secret_before]
+    rows.append(row_zero)
+    # data rows of csv file
+    idx = 1
+    for secret_after in secrets_after:
+        current_row = {'-': 'Run #' + str(idx), 'Survival of all bits for each sequence, %': array_of_probabilities_of_survival_all_bits[idx-1]}
+        ch_counter = 1
+        for character in [*secret_after]:
+            current_row['bit_' +str(ch_counter)] = character
+            ch_counter += 1
+        rows.append(current_row)
+        idx += 1
+    rows.append({})
+    # variance and prob of survival after each bit
+    indiv_prob_row = {'-': 'Survival probability of individual bits, %:', }
+    idx = 1
+    for i in range(len(array_of_probabilities_of_survival_individual_bits)):
+        indiv_prob_row['bit_'+str(idx)] = array_of_probabilities_of_survival_individual_bits[i]
+        idx += 1
+    rows.append(indiv_prob_row)
+
+    indiv_variance_row = {'-': 'Variance of individual bits:', }
+    idx = 1
+    for i in range(len(array_of_probabilities_of_survival_individual_bits)):
+        indiv_variance_row['bit_'+str(idx)] = array_of_variances_of_individual_bits[i]
+        idx += 1
+    rows.append(indiv_variance_row)
+    # name of csv file
+    filename = "../experiment/original/evaluation.csv"
+
+    # writing to csv file
+    with open(filename, 'w') as csvfile:
+        # creating a csv writer object
+        writer = csv.DictWriter(csvfile, fieldnames=fields)
+
+        # writing headers (field names)
+        writer.writeheader()
+
+        # writing data rows
+        writer.writerows(rows)
+
+def run_experiment_ten_times_count_prob_of_each_bit_to_survice(stl_file_name: str, stl_sanitize_save_wihtout_ext: str):
+    decoder_before = DecoderSTL(stl_file_name,
                                 False)  # carrier's with secret filepath
     secret_before = decoder_before.DecodeBytesFromSTL(base2)  # path to save the decoded carrier
     secret_before_binary_str = SecretBytesListToBinaryNoPrint(secret_before)
 
-    number_of_experiments = 10
+    number_of_experiments = 3
     idx = 0
 
     secrets_after = []
     while idx < number_of_experiments:
-        secret_after = experiment_random_text_base_2_vertex_how_many_bits_survive()
+        sanitized_stl_file_name: str = stl_sanitize_save_wihtout_ext + str(idx+1) + ".STL"
+        secret_after = sanitize_and_return_new_sequence_vertex_ch(stl_file_name, sanitized_stl_file_name)
         print("experiment number " + str(idx))
         print(secret_after)
         secrets_after.append(secret_after)
         idx += 1
+
+    # histogram and prob of all bits
+    array_of_probabilities_of_survival_all_bits = calculate_prob_and_variance_of_all_bits(secret_before_binary_str, secrets_after)
+    build_gistogram(array_of_probabilities_of_survival_all_bits)
 
     bit_pos_bit_states = {}
     for secret_after in secrets_after:
@@ -332,10 +432,12 @@ def test_run_experiment_ten_times_count_prob_of_each_bit_to_survice():
             bit_pos_bit_states[bit_pos] = new_sequence
 
 
+
     print("Secret before:")
     lenn = str(len(secret_before_binary_str))
     print(lenn)
     bit_pos_survival_prob = {}
+    array_of_variances_of_individual_bits = []
     for bit_pos in bit_pos_bit_states:
         original_bit_value = secret_before_binary_str[bit_pos]
 
@@ -350,10 +452,37 @@ def test_run_experiment_ten_times_count_prob_of_each_bit_to_survice():
 
         bit_pos_survival_prob[bit_pos] = prob_of_staying_the_same
 
-    array_of_prob = []
+        # calculate variance. we have strings for each bit position, we need to get ints
+        int_array_bit_position = []
+        for str_bit in bit_pos_bit_states[bit_pos]:
+            int_array_bit_position.append(int(str_bit))
+        array_of_variances_of_individual_bits.append(statistics.variance(int_array_bit_position))
+
+    array_of_probalities_of_inidividual_bits = []
     for key in bit_pos_survival_prob:
-        array_of_prob.append(bit_pos_survival_prob[key])
+        array_of_probalities_of_inidividual_bits.append(int(bit_pos_survival_prob[key]))
         print(str(key) +": " + str(bit_pos_survival_prob[key]) + " %")
 
-    print(statistics.median(array_of_prob))
+
+
+    build_csv_file(secret_before_binary_str, secrets_after, array_of_probabilities_of_survival_all_bits,
+                   array_of_probalities_of_inidividual_bits, array_of_variances_of_individual_bits)
+    return
+    #print(statistics.median(array_of_prob))
     # print(secret_before)
+
+
+
+
+def test_final_experiment_vertex_channel():
+    original_secret = "jebsmmsfzv" # 10 bytes =
+    # original_stl = "../experiment/original/original_stl/bunny.STL"
+    encoded_stl = "../experiment/original/encoded_stl/encoded_bunny.STL"
+    stl_sanitize_save_without_ext = "../experiment/original/sanitized_stl/sanitized_bunny_"
+
+    # encoder = EncoderSTL(original_stl, False)  # carrier's filepath
+    # encoder.EncodeBytesInSTL(original_secret,  # secret's path
+    #                          "../experiment/original/encoded_stl/encoded_bunny.STL",
+    #                          base2)  # path to save the carrier with secret
+
+    run_experiment_ten_times_count_prob_of_each_bit_to_survice(encoded_stl, stl_sanitize_save_without_ext)
